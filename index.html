@@ -536,10 +536,12 @@ async function sbFetch(table, method="GET", body=null, query="") {
 }
 
 // key obj → supabase row
+// foto: envia URL pública ou string vazia (nunca base64 para o banco)
 function keyToRow(k) {
+  const fotoVal = (k.foto && k.foto.startsWith("http")) ? k.foto : "";
   return { id:k.id, loc:k.loc, codigo:k.codigo||"", status:k.status||"LIVRE",
     responsavel:k.responsavel||"", data_ret:k.dataRet||"", data_dev:k.dataDev||"",
-    obs:k.obs||"", foto:k.foto||"", updated_at: new Date().toISOString() };
+    obs:k.obs||"", foto:fotoVal, updated_at: new Date().toISOString() };
 }
 function rowToKey(r) {
   return { id:r.id, loc:r.loc, codigo:r.codigo||"", status:r.status||"LIVRE",
@@ -689,6 +691,68 @@ function addHist(tipo, k, extra={}) {
   hist.unshift(entry);
   if(hist.length > 2000) hist.length = 2000;
   syncHist(entry); // Supabase async
+}
+
+// ══════════════════════════════════════════
+// FOTO — COMPRESSÃO + SUPABASE STORAGE
+// ══════════════════════════════════════════
+
+// Comprime imagem para max 800px, qualidade 0.75 → retorna blob
+function compressImage(file, maxPx=800, quality=0.75) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let {width:w, height:h} = img;
+      if(w > maxPx || h > maxPx) {
+        if(w > h) { h = Math.round(h * maxPx / w); w = maxPx; }
+        else       { w = Math.round(w * maxPx / h); h = maxPx; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width=w; canvas.height=h;
+      canvas.getContext("2d").drawImage(img,0,0,w,h);
+      canvas.toBlob(b => b ? resolve(b) : reject(new Error("Compress failed")), "image/jpeg", quality);
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+// Upload foto para Supabase Storage, retorna URL pública
+async function uploadFoto(file, keyId) {
+  if(!SUPA_URL||!SUPA_KEY) return null;
+  try {
+    const blob = await compressImage(file);
+    const path = `${keyId}_${Date.now()}.jpg`;
+    const res = await fetch(`${SUPA_URL}/storage/v1/object/chave-fotos/${path}`, {
+      method: "POST",
+      headers: {
+        "apikey": SUPA_KEY,
+        "Authorization": `Bearer ${SUPA_KEY}`,
+        "Content-Type": "image/jpeg",
+        "Cache-Control": "3600",
+        "x-upsert": "true"
+      },
+      body: blob
+    });
+    if(!res.ok) { console.warn("[Storage upload]", await res.text()); return null; }
+    return `${SUPA_URL}/storage/v1/object/public/chave-fotos/${path}`;
+  } catch(e) {
+    console.warn("[uploadFoto]", e.message);
+    return null;
+  }
+}
+
+// Deleta foto antiga do Storage (fire-and-forget)
+function deleteFoto(url) {
+  if(!SUPA_URL||!SUPA_KEY||!url||!url.includes("chave-fotos")) return;
+  const path = url.split("chave-fotos/")[1];
+  if(!path) return;
+  fetch(`${SUPA_URL}/storage/v1/object/chave-fotos/${path}`, {
+    method: "DELETE",
+    headers: { "apikey": SUPA_KEY, "Authorization": `Bearer ${SUPA_KEY}` }
+  }).catch(()=>{});
 }
 
 // ══════════════════════════════════════════
@@ -889,7 +953,7 @@ function openKey(idx) {
 // ══════════════════════════════════════════
 let eidx=null, ephoto="";
 function openEdit(idx) {
-  eidx=idx; ephoto=keys[idx].foto||"";
+  eidx=idx; ephoto=keys[idx].foto||""; ephotoFile=null;
   const k=keys[idx], isCorretor=session?.role==="corretor";
   document.getElementById("me-t").textContent = "Chave — "+k.loc;
   // Corretor: can only edit foto, dataRet, dataDev, responsavel (only if INDISP), status limited
@@ -944,13 +1008,24 @@ function onStatusChange(val) {
   const isReturn = (prevStatus==="INDISPONÍVEL"||prevStatus==="NÃO LOCALIZADA") && !isIndisp;
   if(devFld) devFld.style.borderColor = isReturn ? "var(--or)" : "";
 }
+let ephotoFile = null; // raw File object for upload
+
 function handlePhoto(e) {
   const file=e.target.files[0]; if(!file)return;
-  const reader=new FileReader();
-  reader.onload=ev=>{ ephoto=ev.target.result; const pp=document.getElementById("pp"),pua=document.getElementById("pua"),prb=document.getElementById("prb"); pp.src=ephoto;pp.classList.add("show");pua.style.display="none";prb.classList.add("show"); };
-  reader.readAsDataURL(file);
+  ephotoFile = file; // store for upload in saveEdit
+  // Show preview using object URL (fast, no base64 needed in UI)
+  const previewUrl = URL.createObjectURL(file);
+  const pp=document.getElementById("pp"),pua=document.getElementById("pua"),prb=document.getElementById("prb");
+  pp.src=previewUrl; pp.classList.add("show");
+  pua.style.display="none"; prb.classList.add("show");
 }
-function removePhoto() { ephoto=""; const pp=document.getElementById("pp"),pua=document.getElementById("pua"),prb=document.getElementById("prb"); pp.classList.remove("show");pp.src="";pua.style.display="";prb.classList.remove("show"); }
+function removePhoto() {
+  // Delete old photo from Storage if it was a URL
+  if(ephoto && ephoto.startsWith("http")) deleteFoto(ephoto);
+  ephoto=""; ephotoFile=null;
+  const pp=document.getElementById("pp"),pua=document.getElementById("pua"),prb=document.getElementById("prb");
+  pp.classList.remove("show"); pp.src=""; pua.style.display=""; prb.classList.remove("show");
+}
 async function saveEdit(andPDF=false) {
   if(eidx===null)return;
   const prev = {...keys[eidx]};
@@ -967,6 +1042,23 @@ async function saveEdit(andPDF=false) {
   const isReturn = (prev.status==="INDISPONÍVEL"||prev.status==="NÃO LOCALIZADA") && (newStatus==="DISPONÍVEL"||newStatus==="LIVRE");
   if(isReturn && !newDataDev) {
     toast("Preencha a data de devolução ao retornar a chave",true); return;
+  }
+
+  // Upload nova foto para Supabase Storage se arquivo foi selecionado
+  if(ephotoFile) {
+    toast("Enviando foto...");
+    // Delete old photo if it was stored in Storage
+    if(prev.foto && prev.foto.startsWith("http")) deleteFoto(prev.foto);
+    const uploadedUrl = await uploadFoto(ephotoFile, keys[eidx].id);
+    if(uploadedUrl) {
+      ephoto = uploadedUrl;
+    } else {
+      // Fallback: keep as base64 preview if upload failed
+      const pp = document.getElementById("pp");
+      if(pp && pp.src) ephoto = pp.src;
+      toast("Foto salva localmente (sem conexão)");
+    }
+    ephotoFile = null;
   }
 
   keys[eidx].foto = ephoto;
