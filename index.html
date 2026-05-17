@@ -1474,12 +1474,16 @@ async function gerarPDF(){
   }catch(e){console.error(e);toast("Erro ao gerar PDF",true);return;}
   // If definitiva/novo locatario → LIVRE
   if(isDefinitive){ k.status="LIVRE";k.codigo="";k.responsavel="";k.dataRet="";k.dataDev="";k.obs="";addHist("EDIÇÃO",k,{changes:[{campo:"Status",anterior:"INDISPONÍVEL",novo:"LIVRE"},{campo:"Código",anterior:k.codigo,novo:""}]});saveAll();syncKey(k);renderList(); }
-  // Auto email with PDF attached
-  const changes=diffFields(prevK,isDefinitive?{...k,status:"LIVRE"}:k);
-  // PDF sempre envia email (mudança de status real)
-  const emailChanges=[{campo:"Status",anterior:bl(prevK.status),novo:bl(k.status)},{campo:"Destinatário",anterior:"",novo:nome},{campo:"Tipo saída",anterior:"",novo:pSaida}];
-  const subj=`Saída de chave — ${k.loc} — ${pSaida} — ${new Date().toLocaleDateString("pt-BR")}`;
-  sendAutoEmail(subj, emailChanges, k, pdfBase64, pdfName);
+  // Email de notificação (sem anexo — PDF já baixado localmente)
+  const emailChanges=[
+    {campo:"Status",anterior:bl(prevK.status),novo:"Indisponível"},
+    {campo:"Destinatário",anterior:"",novo:`${nome} (${pTipo})`},
+    {campo:"Tipo de saída",anterior:"",novo:pSaida},
+    {campo:"Data saída",anterior:"",novo:fd(k.dataRet)},
+    {campo:"Devolução",anterior:"",novo:pSaida==="TEMPORÁRIA"?fd(k.dataDev):"Não retorna"}
+  ];
+  const subj=`Saída de chave — ${k.loc} — ${pTipo} — ${pSaida} — ${new Date().toLocaleDateString("pt-BR")}`;
+  sendAutoEmail(subj, emailChanges, k, null, null);
   closeSheet("mp");
 }
 
