@@ -852,17 +852,23 @@ function applyStatusRules(k, prevStatus) {
 // AUTO EMAIL REPORT
 // ══════════════════════════════════════════
 async function sendAutoEmail(subject, changes, k, pdfBase64=null, pdfName=null) {
-  if(!cfg.emailDest) return; // skip silently if not configured
-  const html = buildReportHTML(subject, changes, k);
+  // Sempre chama a API — o servidor decide o destino via ENV vars
+  // cfg.emailDest é opcional (só usado para exibição local)
+  const htmlBody = buildReportHTML(subject, changes, k);
   try {
-    await fetch("/api/send-email", {
+    const res = await fetch("/api/send-email", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ subject, html, pdfBase64, pdfName })
+      body: JSON.stringify({ subject, html: htmlBody, pdfBase64, pdfName })
     });
-    showEmailIndicator();
-    addHist("EMAIL", k, { subject, usuario: session?.name, perfil: session?.role });
-    saveAll();
+    if(res.ok) {
+      showEmailIndicator();
+      addHist("EMAIL", k, { subject, usuario: session?.name, perfil: session?.role });
+      saveAll();
+    } else {
+      const err = await res.json().catch(()=>({}));
+      console.warn("[Email API error]", err.error||res.status);
+    }
   } catch(e) {
     console.warn("[Email]", e.message);
   }
