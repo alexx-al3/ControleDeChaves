@@ -1,14 +1,7 @@
-// ══════════════════════════════════════════════════════
-// ACRC Imóveis — Email API (Nodemailer via Vercel Functions)
-// Variáveis de ambiente no Vercel:
-//   GMAIL_USER  →  chavesacrc@gmail.com
-//   GMAIL_PASS  →  senha-de-app-sem-espaços
-//   EMAIL_DEST  →  cadastro@acrcimoveis.com.br
-// ══════════════════════════════════════════════════════
-
+// ACRC Imóveis — Email API (Vercel Serverless Function)
 const nodemailer = require("nodemailer");
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -22,21 +15,17 @@ export default async function handler(req, res) {
 
   const { subject, html, pdfBase64, pdfName } = req.body;
 
-  // Remove espaços da senha de app (Google exibe com espaços mas usa sem)
   const gmailUser = (process.env.GMAIL_USER || "").trim();
   const gmailPass = (process.env.GMAIL_PASS || "").replace(/\s/g, "");
   const emailDest = (process.env.EMAIL_DEST || gmailUser).trim();
 
-  console.log("[EMAIL] De:", gmailUser, "Para:", emailDest, "Assunto:", subject);
+  console.log("[EMAIL] De:", gmailUser, "Para:", emailDest);
 
   const transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 465,
     secure: true,
-    auth: {
-      user: gmailUser,
-      pass: gmailPass,
-    },
+    auth: { user: gmailUser, pass: gmailPass },
   });
 
   const mailOptions = {
@@ -51,10 +40,10 @@ export default async function handler(req, res) {
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log("[EMAIL OK] MessageId:", info.messageId);
+    console.log("[EMAIL OK]", info.messageId);
     return res.status(200).json({ ok: true, messageId: info.messageId });
   } catch (err) {
     console.error("[EMAIL ERROR]", err.message);
     return res.status(500).json({ error: err.message });
   }
-}
+};
