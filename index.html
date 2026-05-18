@@ -1441,49 +1441,168 @@ async function gerarPDF(){
   try{
     const {jsPDF}=window.jspdf;
     const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
-    const hoje=new Date().toLocaleDateString("pt-BR"),hora=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
-    doc.setFillColor(27,46,75);doc.rect(0,0,210,30,"F");
-    doc.setFillColor(232,101,26);doc.rect(0,26,210,4,"F");
-    doc.setTextColor(255,255,255);doc.setFont("helvetica","bold");doc.setFontSize(18);doc.text("ACRC IMÓVEIS",14,13);
-    doc.setFont("helvetica","normal");doc.setFontSize(9);doc.text("Controle de Chaves — Comprovante de Entrega",14,20);doc.text(`Emitido: ${hoje} às ${hora} por ${session?.name||"—"} (${session?.role||""})`,14,26);
-    doc.setFillColor(242,242,240);doc.roundedRect(10,36,190,24,3,3,"F");
-    doc.setTextColor(25,25,23);doc.setFont("helvetica","bold");doc.setFontSize(22);doc.text(k.loc,20,49);
-    if(k.codigo){doc.setFontSize(10);doc.setFont("helvetica","normal");doc.setTextColor(90,90,86);doc.text(`Código: ${k.codigo}`,20,55);}
+    const hoje=new Date().toLocaleDateString("pt-BR");
+    const hora=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+    const PW=210, PH=297; // A4 mm
+    const FOOTER_H=14;    // footer height
+    const MARGIN=14;      // left/right margin
+    const SAFE_BOTTOM=PH-FOOTER_H-4; // max y before footer
+
+    // ── HEADER BAR ────────────────────────────────────────
+    doc.setFillColor(27,46,75);
+    doc.rect(0,0,PW,32,"F");
+    doc.setFillColor(232,101,26);
+    doc.rect(0,28,PW,4,"F");
+
+    // Logo (image)
+    try{
+      doc.addImage("data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4QAqRXhpZgAASUkqAAgAAAABADEBAgAHAAAAGgAAAAAAAABQaWNhc2EAAP/bAIQAAwICCAgICAgICAgICAcICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICggICAoLCgkICAsMCggNCAgJCAEDBAQGBQYKBgYKCA4KDQ4ODg8NDQ0OCg0NDQoKDQ0NCw0NDQ0NCggKEAoNDQoNCg0NDQ0KEAsLDQ4IDQ0NCAgI/8AAEQgAoACgAwERAAIRAQMRAf/EAB4AAQABBQADAQAAAAAAAAAAAAAJBQYHCAoBAgQD/8QAPBAAAgIBAwMBBAUJCAMAAAAAAQIAAwQFERIGBxMhCAkUMRUiIzJBGDNRVVaUldHSFhcZQlJhcdQkJTT/xAAcAQEAAgIDAQAAAAAAAAAAAAAABAYDBQIHCAH/xAA7EQACAQIDBAYGCQQDAAAAAAAAAQIDEQQhMQUSQVETImFxkaEGFDJUgZIVFlNygrHR8PEHQsHhI2KD/9oADAMBAAIRAxEAPwCOKdkGnEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAy17PPsu6v1RblVaVXQ3wFdVmRZkXeGtPOzrSgISxi9nitYDjtxrbcj0BhYnGU8PZSvd8Fy5mWFNzM3f4TfV3+nSv39/+rIP0tR5S8v1Mvq75j/Cb6u/06V+/v8A9WPpajyl5fqPV3zNZO7Ha3M0TUcnS9QRUy8NkFgrbnWwtqS6t634rzR67FIPEeu4IBUzaUa0a0FON7dv7/fkYJwcXYtKZzgIAgCAIAgCAIAgCAIAgCAIAgHhm2G5+Q9YBOn7u3sUdD6ZxBbWUzdV21PMDKyujZCJ8PQ6uAyNj4q01vWQON3mOwLNKLjavS1pPhey7l8WvDJ6m0hHdjY2bkEyCARre+D7D86sHqOhDyx+Om6htv8AmLHZ8K5vrcVFWQ9uOxClnOVSCQKgJvdlYjdn0T0f59/lbnbtI1aN1fkRdy1kAQBAEAQBAEAQBAEAQBAEAQBAM7exF2MHUPUmDhWoHxMcnUNQUhSrYeIyE1MrAhkych6MV12/N3OfTjNZtGq6dF245eOvC2mVsvIz0Y3lcn3lKNiIAgFpd2+2mPrOmZ2l5Q+w1DGtx3YBS1Zdfs7qwwK+WiwJdWSCBYinY7TJTqOnJTWqPjVznW6w6RyNPy8rAy14ZODkW4t6jfby0ua2KEhS1bFeaNsOSMrD0YS/UaqqwU1xX8+fHiaucd12KRMxwEAQBAEAQBAEAQBAEAQBAEAmN90/2J+jtCs1a5CuVr7ranIEFNPxy6Yg2JIHmZr8rkoHOu6gHfxrKXtGv0lVpaLL9Xq08+PK2RsqUd2JvBNWZizu73djC0PTsnVNQsNWJiBDYwUuxNliU1qiKCzM1liqAoJ9f9jOUYuTsgXdTcGAZSGVgGVgQQykbggj0II9QROIPeARIe917EfCapi69Qm1GroMXLIHouoYtf2TsS3zysNQoVU2BwbGZibAJZtlYhWdF66rTw5t8e7ziV4/3GgMsRCEAQBAEAQBAEAQBAEAQBAL+7B9oLdf1nT9IqLL8deFusX504tYNuXcCVZQ1eOlhTkOJt8an70h4ut0NJzWui73+XPPlYy0470joi0PRKcainGx60poxqq6KKqwFSqmpBXXWij0VERVVQPkABKLKTk23qzZn2ziCLP3wfffyX4PTlDbpjqupahsRsbbA9eFjts2+9dXmyHrdNj5sR1O6mWLZOHz6Z8Mlr48muFv9EWvOysbG+6/76jVum6sKxwczp8pp9q7jkcQKTp1vEHcIcdTjBmA5WYlxmux9F06z5PNfH4t65Z68jLTlvRNv5rjKYi9rHsgOotA1HTAF89tPlwnY8Qmdjny4pLcWKI9qiqxgpPhssAB3kjD1eiqRnyflx5HGSurHPjbQykq6NW6Eq6OpV0dSVdHVgGV0YFWUgEEEEDaX6MlJKS0efiapqzses5HwQBAEAQBAEAQBAEAQBAJRvc+dhvHTndSXp9bJ5abp++/pj1Or5ty/WKsLclKscEqGQ4lwBK2mVTamI359ErWXdr369lufwNhRjZXJJ5oiQUXrbrDH0/Dys/Kfx42Dj3ZV77FitVFbWOVUbszcVPFVBLNsACSBOUYuTUVqwc8HXfWGb1Bq+XnPW1mZquTZeKVPIoCCa8dCQm6Y2OiUqxA+zqBP4y7RdLA4feqyjGMVeUnpm7cFnm7LjoQqdKpiqqp0otyeiXZ/rMzP7ufvr9CdTYnkcrhawF0zK3LcFa91OFeVH1eVeVwr8jD6lORedwOUw7UoudK6WcX5ceF/NLjwONGVnYnSlNJ4gEJXvOuxf0P1JZl1Jxw9fRs+rYAKuWrKmo1Ab7lvK1eWzcQN8zYE8W2t2y6ylT6PiuHZz059/5EGvGzuajzdEUQBAEAQBAEAQBAEAQCsdG9H5Go5mLgYi88rOyKsahTvx8lzhFZyqsVrTfnY/E8K1ZiNlMw1qqpQc3w/a8/A5wjvOx0Vdp+2+Po+mYOl4u/g0/GqxkYhQ1hrUB7rOIC+W5+VthAALux2G8oNSbqSc3q3f8Ad8zaJWLrmM+kfPveO/IxdNxen6HHn1ZhlZigjkmn4tgNasOQZfistVCNxKsmJkodputmYdzqdI092PHt5d/H89TBWlaNjTn2IO3QsvyNUsXdcbfGxtwPz1ihr7BuNwa6WWsEH5X2D8JSv6ibV6OjT2fB5z68/uxdoR7U5pyt/wBInZXoFs1SnPHTXs9SP3mus+xqNo/iZiv2lO2v0dqmRUq7Y+XvlY+w9AlxbyVj0Cjw3c0VRvtX4ifvS5eim1VtPZsJTd5w/wCOfa4rKTzv1oWbfF71tCp+lGzPo/HzUV1J9ePdJ5x0SyldJcrXeZNT7Enff+0PTmDm2PzzKV+C1H1Xl8bihUsscKAFOTWa8sKANkyF9BIWJpdFVlDt8npxfDtuaWDukzO8inM1h94t2JOudM5fhrL5uk/+ywwoYu5x0b4mhVUFna/Fa5UrAPK4U+m6jadgq3RVovho/j8UvHTUxzjvRsQXq2/qPkZejVnmAIAgCAIAgCAIAgCASAe6I7EnL1PL1+5AaNJQ4mGSNw2oZNYNzqeXocXDbgQyevxyFW3rYSubWrqypLXV6ZdnNPj3Pjwm0I/3EtsrRLPS69VUsxCqoLMzEAKoG5JJ9AAPUk/hAOfL2oe8tnU3UObqFfOyvJvXF02r62/wlR8OGqqwUo1+/wAQyEDjdkWCXbCQjhsPvVGkrOUm+CSu28k8o5u+mZBcZVqihBNttJLm27fnkbwdrOg00zT8XCXYmiv7Rhv9pe5Nl9nqSdmtZiBv6LxUegE8nba2lLaWNq4uWknkuUVlFfCKV+bu+J6m2VgI4DCU8NH+1ZvnJ5yfzN9ysjGPti9u/i9M+KrXe7TGN3y9WxmAXJXfcbBAEyD8/SkgDdpcPQLavqm0PVpvqVlu91RZwfxzp/jTvkVX002Z63gemguvSe93wftrVdk+PsvLM+L3TnfQ6frtukXPti67XtUCTxTUcVXsqI3bgnxGP5qnIXd7K8Vd/qqJ3rtajvQVRarL4eHPi2dCUJcCYuVUmiAQC+2z2MHT3Umfg1oExLyM/TwAoUYeWzla0VfupjXpfiqCB9ShT677m7bOq9JRXZl4acEtP5NdWjaRgybIwCAIAgCAIAgCAIB7U0O7KlaNZY7BK60Us9jsQqIiqCzO7EKqqCSSAAd5xlJRTk9Fn4H1K7sdCHspdkh09oGnaWQvnppFmaynkr51582UytspZFtZq6yVB8SVjYbbSg4ir0tSU8835cOLt3XyNrFWVjLcjnI0/wDeg99BpPTduFU4GZ1AXwK13XkMQqDqNvEncp4GGKWAPGzLqM2Oz6TqVl2Z+HxT1yutORiqS3YkZXsdduPi9S+Ldd6NMUWD09GybAy0L6gg+MCy70IKulJ+Rms9PNreqYD1aD69Z7vaoRs5v45Q7U5ci5ehOzPWcY8TNdSln3zfs+GcuxpG+E82HoA/O+hXVlYBlcFWU+oZWGzKR+IIJBnKMnCSlFtNO6fJrR+J8lFSTjJXTya7HwI0evOncjQ9WsrodqrtPyq8nBv+ZUI65GFeC68WZNk5fVK+Wt1+txM9e7Jx8NrYCniHbrxtJcpxykrcOst6PY4vieV9r4CWzcbUoO9k7xfODzi9Fd7uT5O6uT89he7dOu6Pp+rUgKudjpZZWp5eHIXevJxydgSaMhLKiSBvw329ZWasNybjydvAxJ3Vy/pjPpo572LsV9IaHXq9KFsrQHayziCWfT8komUNh8/A60ZPJgeFVV+23NjNrs2t0dZLg8v04pa8e8w1Y70SHWXM1ogCAIAgCAIAgCAbd+7B7GfS/UiZd1fPD0BFzrCQpRsx2ZNOqIJ5bixLctWCkBsMAkcl30m1ayjT3E1d8OznppftTy7yVQjncmylSJwgEFfvFu+v031Nl+Ny2FpAOmYoBbgTQ7HMvCk8eVuUbK/Io+0poxzuwC7XLZlFwpXazk79vZwv5tcVqyBXld2NgPZx7cHTNKoqdeORkf8AlZP6RbcARWfU+tNQrpOx2LIzbDkZ5o9LNrfSW0alSDvTh1Ifdg31vxSvPuaXA9KejWzPo/AQpyXXl15fektOOkbR703xMnynloEA1d9uDt7zx8fU61+tjMMbJI29aLW+xdj8yK7z4wBv/wDRv8gTO4/6dbU3K1TZ83lNb8PvwXWS76a3v/PtOqvTzZvSUIY2Czg92X3ZPJvunl+MzD7nvvsUtz+nL3+raDqWn8j8rF41Z1CksfvL4MhK0UAFctySWnam1qFmqq45P/HYsv41OnaErqxKNK6Sj4dd0OnKouxsitbqMmqyi+pwGS2m5DXZW6n0ZXRmUg/MEz6m07rUHO5347R26DrGoaRaWY4GQyVWNtytxXAtxLjsFHK3Getn4jYWF1H3ZfMJW6alGb1496+C78tNDWVI7siw5LMQgCAIAgCAIB4ZthufkPWATp+7t7FHQ+mcQW1lM3VdtTzAysro2QifD0OrgMjY+KtNb1kDjd5jsCzb0XG1elrSfC9l3L4teGT1NrCO7Gxs3IJzMDe2932/s905n5tdnjzL0+B04gryGblKyJYgYFWOLWLcsqVIK47Ag7yVhaXS1Yx7fJa8Vw7b8jhOW6rkLPs0dtvpDVcetl3x8TbKyN/kUpI8VZ9CD5bvGpU7b1i0j7smelm1FszZs3DKc/8AjguTks2uK3YXafB7vM3fots17Q2hHeXUh15fheS0s7ysmuVyRomeVD0qIAgFM6m6eqy8e/FuG9WTU9Ng/HjYpUkfoZd+QP4EA/hJeDxVTCV4Yil7UJKS74u9u56PmRsTh4YmlOjU9mScX3NW8eKI5+jeqszprW6MtAfi9EzuRT1QXrUxS6rcqxWrMxmevmFJ8V/JfwM9fQqUtpYSFWn7M4qUdHa6vbkmneMuWaPKeIw88FiJ0KmsZOL4Xs9e56p8cjoZ6P6soz8TGzsV/JjZtFWTRZ8udV9a2VtsfUEqw3U+oO4PqJTGrOzJBV58BGt74PsPzqweo6EPLH46bqG2/wCYsdnwrm+txUVZD247EKWc5VIJAqAm92ViN2fRPR/n3+Vudu0jVo3V+RF3LWQBAEAQBAEAQDO3sRdjB1D1Jg4VqB8THJ1DUFIUq2HiMhNTKwIZMm96MV12/N3OfTjNZtGq6dF245eOvC2mVsvIkUY3lcn3lKNgIBDl72HvodQ12vSKbN8TQatrQN9n1HKVbLidm4P8Pj+ClCV5V2Plrv8AXYC1bJopQdRp3eXw8OfG75c7wq8uB49iLpuuvTLsoDe3LynV229RXjgJWg/2DNY//Nh/QJ0p/UTFzqbQhh37EIJpdtTOT77KK/Cd5egmFhTwEqy9qc3d9kMkvNv4mxM6rOyBAEAQDSP24Om6qtRxshBs+ZjN5tgNmbHZUSz9JY1utZJ/y1J+gz0P/TrF1KuBqUJ+zTmt3sVRNuPdvJyXbJnRfp9hYU8VTrx9qcXvdrg0k++zS+CN4fdFd+Pi9LytBvfe/R38+JyI3fT8p2Yqu7Fm+FyvIrHiqpVkYqDfYyz7Tw/R1OkWkvz4/r/g6/oyvEkAmmM5aXdvtpj6zpmdpeUPsNQxrcd2AUtWXX7O6sMCvlosCXVkggWIp2O0yU6jpyU1qj41c51usOkcjT8vKwMteGTg5FuLeo328tLmtihIUtWxXmjbDkjKw9GEv1GqqsFNcV/Pnx4mrnHddikTMcBAEAQBAEAubofuhqelta2m6hmae14Rbmw8izHa1ayxRXNZBYKXYgH8WMxTpQqe3GL7znGbjoXb+Vd1T+0mt/xHJ/rmP1Wh9nDwOXSyH5V3VP7Sa3/Ecn+uPVaH2cPAdLIxnn6hZdZZddY9t11j2222u1ltttjF7LbLGJZ7LHZnZ2JLMSSSTM8YqKtFJLkskY276ld0DuXqOJX4cXOyserkW8dVzonJvvHiDtufxmrxWyMDip9LiKFGcrW3pRUnZaK7NphtrY3DQ6OhWqxjraMmlmVL++/Wf1pnfvFn85E+ruy/dcN8iJX1g2l7zX+Zj++/Wf1pnfvFn84+ruy/dcN8iH1g2l7zX+Zj++/Wf1pnfvFn84+ruy/dcN8iH1g2l7zX+Zj++/Wf1pnfvFn84+ruy/dcN8iH1g2l7zX+ZlB6k6yy8wo2Xk35LVgqhusawoGILBeXyBIBP/AmywmAw2DTjhqdOCeb3Uo3a0vbU12Kx+JxbTxFSc7abzva/I9+j+uc7TrvidPzMrByODV+fEvsx7TW5UvWXrZSyMVVih3HJFO26qRLnThNWnGL71f+CHGTjoXx+Vd1T+0mt/xHJ/rmL1Wh9nDwOfSyH5V3VP7Sa3/Ecn+uPVaH2cPAdLIx/wBS9T5ObfZlZmRdlZN5U25GRY1t1pRFrUvYxLMVrREBP+VRM0YRgrRSS5I4OTebKZOZxEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEAQBAEA//2Q==","JPEG",MARGIN,4,22,22);
+    }catch(e){}
+
+    // Empresa + subtítulo ao lado da logo
+    doc.setTextColor(255,255,255);
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(15);
+    doc.text("ACRC IMÓVEIS",40,12);
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(8.5);
+    doc.text("Controle de Chaves — Comprovante de Entrega",40,18);
+    doc.setFontSize(7.5);
+    doc.text(`Emitido em ${hoje} às ${hora} por ${session?.name||"—"} (${session?.role||""})`,40,24);
+
+    // ── CHAVE INFO BOX ────────────────────────────────────
+    doc.setFillColor(242,242,240);
+    doc.roundedRect(MARGIN,36,PW-MARGIN*2,22,2,2,"F");
+    doc.setTextColor(27,46,75);
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(20);
+    doc.text(k.loc,MARGIN+6,47);
+    if(k.codigo){
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(9);
+      doc.setTextColor(90,90,86);
+      doc.text(`Código: ${k.codigo}`,MARGIN+6,53);
+    }
+
+    // Tipo de saída — badge direito
     const sC={TEMPORÁRIA:[230,248,235],DEFINITIVA:[252,234,234],"NOVO LOCATÁRIO":[254,243,220]};
     const sT={TEMPORÁRIA:[37,122,53],DEFINITIVA:[161,40,40],"NOVO LOCATÁRIO":[138,92,8]};
-    const sc=sC[pSaida]||[240,240,240],st=sT[pSaida]||[80,80,80];
-    doc.setFillColor(sc[0],sc[1],sc[2]);doc.roundedRect(152,37,48,22,3,3,"F");
-    doc.setTextColor(st[0],st[1],st[2]);doc.setFont("helvetica","bold");doc.setFontSize(10);doc.text(pSaida,176,47,{align:"center"});
-    if(pSaida==="TEMPORÁRIA"&&dias){doc.setFont("helvetica","normal");doc.setFontSize(8);doc.text(`${dias} dias`,176,53,{align:"center"});}
-    doc.setDrawColor(228,228,224);doc.line(10,64,200,64);
-    const flds=[["Destinatário",nome+(cpf?` — CPF/RG: ${cpf}`:"")],["Tipo",pTipo],["Data de saída",fd(k.dataRet)],["Devolução prevista",pSaida==="TEMPORÁRIA"?fd(k.dataDev):"Não se aplica"],["Responsável ACRC","ACRC Imóveis — Blumenau/SC"]];
-    let y=72;
-    flds.forEach(([lb,vl])=>{doc.setFontSize(8);doc.setTextColor(150,150,146);doc.setFont("helvetica","normal");doc.text(lb.toUpperCase(),14,y);doc.setFontSize(12);doc.setTextColor(25,25,23);doc.setFont("helvetica","bold");doc.text(String(vl),14,y+6);doc.setFont("helvetica","normal");y+=16;});
-    if(obs){y+=2;doc.setFontSize(8);doc.setTextColor(150,150,146);doc.text("OBSERVAÇÕES",14,y);doc.setFontSize(11);doc.setTextColor(25,25,23);const ls=doc.splitTextToSize(obs,180);doc.text(ls,14,y+6);y+=6+ls.length*6;}
-    y+=4;
-    if(pSaida==="TEMPORÁRIA"&&dias){doc.setFillColor(254,243,220);doc.roundedRect(10,y,190,14,3,3,"F");doc.setTextColor(138,92,8);doc.setFont("helvetica","bold");doc.setFontSize(9);doc.text(`⚠  Devolver até: ${fd(k.dataDev)} (${dias} dias)`,16,y+9);y+=20;}
-    else{doc.setFillColor(252,234,234);doc.roundedRect(10,y,190,14,3,3,"F");doc.setTextColor(161,40,40);doc.setFont("helvetica","bold");doc.setFontSize(9);doc.text(`Esta chave NÃO será devolvida — saída ${pSaida.toLowerCase()}.`,16,y+9);y+=20;}
-    // Signature
-    const sigData=getSigDataURL();
-    y=Math.max(y+10,200);
-    if(sigData&&can("signature")){
-      doc.setFontSize(9);doc.setTextColor(150,150,146);doc.setFont("helvetica","normal");doc.text("ASSINATURA DIGITAL",14,y);
-      try{doc.addImage(sigData,"PNG",14,y+4,80,28);}catch(e){}
-      doc.setDrawColor(180,180,176);doc.line(14,y+36,94,y+36);
-      doc.setFontSize(8);doc.text(nome,54,y+41,{align:"center"});
-      y+=48;
-    } else {
-      doc.setDrawColor(180,180,176);doc.line(14,y+20,90,y+20);doc.line(120,y+20,196,y+20);
-      doc.setFontSize(9);doc.setTextColor(130,130,130);doc.setFont("helvetica","normal");
-      doc.text("Assinatura do recebedor",52,y+25,{align:"center"});doc.text("ACRC Imóveis — Responsável",158,y+25,{align:"center"});
-      doc.text(nome,52,y+32,{align:"center"});doc.text("Blumenau/SC",158,y+32,{align:"center"});
-      y+=40;
+    const sc=sC[pSaida]||[240,240,240], st=sT[pSaida]||[80,80,80];
+    doc.setFillColor(sc[0],sc[1],sc[2]);
+    doc.roundedRect(152,37,44,22,2,2,"F");
+    doc.setTextColor(st[0],st[1],st[2]);
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(9);
+    doc.text(pSaida,174,47,{align:"center"});
+    if(pSaida==="TEMPORÁRIA"&&dias){
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(8);
+      doc.text(`${dias} dias`,174,53,{align:"center"});
     }
-    doc.setFillColor(27,46,75);doc.rect(0,282,210,15,"F");doc.setFillColor(232,101,26);doc.rect(0,282,210,2,"F");
-    doc.setTextColor(255,255,255);doc.setFontSize(8);doc.text("ACRC Imóveis — www.acrcimoveis.com.br — Blumenau/SC",105,292,{align:"center"});
+
+    // ── DIVISOR ───────────────────────────────────────────
+    doc.setDrawColor(220,220,216);
+    doc.line(MARGIN,62,PW-MARGIN,62);
+
+    // ── CAMPOS ────────────────────────────────────────────
+    let y=70;
+    const field=(label,value)=>{
+      if(y>SAFE_BOTTOM-14) return; // não ultrapassar footer
+      doc.setFontSize(7.5);
+      doc.setTextColor(160,160,156);
+      doc.setFont("helvetica","normal");
+      doc.text(label.toUpperCase(),MARGIN,y);
+      doc.setFontSize(11);
+      doc.setTextColor(25,25,23);
+      doc.setFont("helvetica","bold");
+      const lines=doc.splitTextToSize(String(value||"—"),PW-MARGIN*2-4);
+      doc.text(lines,MARGIN,y+6);
+      y+=8+(lines.length-1)*5+10;
+    };
+
+    field("Destinatário", nome+(cpf?` — CPF/RG: ${cpf}`:""));
+    field("Tipo de destinatário", pTipo);
+    field("Data de saída", fd(k.dataRet)||"—");
+    field("Devolução prevista", pSaida==="TEMPORÁRIA"?fd(k.dataDev):"Não se aplica");
+    field("Responsável ACRC", "ACRC Imóveis — Blumenau / SC");
+    if(obs) field("Observações", obs);
+
+    y+=4;
+
+    // ── AVISO DE PRAZO / DEFINITIVA ───────────────────────
+    if(y<SAFE_BOTTOM-18){
+      if(pSaida==="TEMPORÁRIA"&&dias){
+        doc.setFillColor(254,243,220);
+        doc.roundedRect(MARGIN,y,PW-MARGIN*2,13,2,2,"F");
+        doc.setTextColor(138,92,8);
+        doc.setFont("helvetica","bold");
+        doc.setFontSize(8.5);
+        doc.text(`Devolver até: ${fd(k.dataDev)} — Prazo: ${dias} dia(s)`,MARGIN+5,y+8);
+        y+=18;
+      } else {
+        doc.setFillColor(252,234,234);
+        doc.roundedRect(MARGIN,y,PW-MARGIN*2,13,2,2,"F");
+        doc.setTextColor(161,40,40);
+        doc.setFont("helvetica","bold");
+        doc.setFontSize(8.5);
+        doc.text(`Esta chave NÃO será devolvida — saída ${pSaida.toLowerCase()}.`,MARGIN+5,y+8);
+        y+=18;
+      }
+    }
+
+    // ── ASSINATURAS ───────────────────────────────────────
+    // Garante que assinaturas ficam antes do footer com folga de 55mm
+    y=Math.max(y+8, Math.min(y+8, SAFE_BOTTOM-55));
+    const sigData=getSigDataURL();
+
+    if(sigData&&can("signature")){
+      // Assinatura digital do ADM/Cadastro
+      doc.setFontSize(8);
+      doc.setTextColor(150,150,146);
+      doc.setFont("helvetica","normal");
+      doc.text("ASSINATURA DIGITAL",MARGIN,y);
+      try{
+        doc.addImage(sigData,"PNG",MARGIN,y+3,78,26);
+      }catch(e){}
+      doc.setDrawColor(180,180,176);
+      doc.line(MARGIN,y+32,MARGIN+80,y+32);
+      doc.setFontSize(8);
+      doc.setTextColor(80,80,80);
+      doc.text(nome,MARGIN+40,y+37,{align:"center"});
+      doc.text("Recebedor",MARGIN+40,y+42,{align:"center"});
+      // Linha ACRC do lado direito
+      doc.line(120,y+32,196,y+32);
+      doc.text("ACRC Imóveis",158,y+37,{align:"center"});
+      doc.text("Responsável pela entrega",158,y+42,{align:"center"});
+    } else {
+      // Linhas de assinatura manuscrita
+      doc.setDrawColor(180,180,176);
+      doc.line(MARGIN,y+22,MARGIN+76,y+22);
+      doc.line(120,y+22,196,y+22);
+      doc.setFontSize(8);
+      doc.setTextColor(100,100,96);
+      doc.setFont("helvetica","normal");
+      doc.text("Assinatura do recebedor",MARGIN+38,y+27,{align:"center"});
+      doc.text("ACRC Imóveis — Responsável",158,y+27,{align:"center"});
+      doc.setFontSize(9);
+      doc.setTextColor(25,25,23);
+      doc.setFont("helvetica","bold");
+      doc.text(nome,MARGIN+38,y+34,{align:"center"});
+      doc.text("Blumenau / SC",158,y+34,{align:"center"});
+    }
+
+    // ── FOOTER (sempre na base da página) ─────────────────
+    doc.setFillColor(27,46,75);
+    doc.rect(0,PH-FOOTER_H,PW,FOOTER_H,"F");
+    doc.setFillColor(232,101,26);
+    doc.rect(0,PH-FOOTER_H,PW,1.5,"F");
+    doc.setTextColor(255,255,255);
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(7.5);
+    doc.text("ACRC Imóveis  ·  www.acrcimoveis.com.br  ·  Blumenau / SC",PW/2,PH-FOOTER_H+9,{align:"center"});
+
     pdfName=`ACRC_${k.loc}_${hoje.replace(/\//g,"-")}.pdf`;
     doc.save(pdfName);
-    // Get base64 for email attachment
     pdfBase64=doc.output("datauristring").split(",")[1];
     addHist("PDF",k,{pdfName,saida_tipo:pSaida,destinatarioTipo:pTipo});
     saveAll();
