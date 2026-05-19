@@ -61,7 +61,7 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
 .user-chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;font-size:11px;color:#fff;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px}
 .user-chip svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .profile-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.pd-cadastro{background:#4ade80} .pd-adm{background:#facc15} .pd-corretor{background:#93c5fd}
+.pd-cadastro{background:#4ade80} .pd-adm{background:#facc15} .pd-corretor{background:#93c5fd} .pd-vistoria{background:#86efac}
 .hbtn{background:rgba(255,255,255,.14);border:none;border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;flex-shrink:0}
 .hbtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
@@ -235,12 +235,12 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
 /* USERS */
 .user-card{background:var(--s);border:1px solid var(--bd);border-radius:var(--r);padding:10px 13px;display:flex;align-items:center;gap:10px}
 .user-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;color:#fff;flex-shrink:0}
-.ua-cadastro{background:var(--nv)} .ua-adm{background:var(--or)} .ua-corretor{background:var(--bl)}
+.ua-cadastro{background:var(--nv)} .ua-adm{background:var(--or)} .ua-corretor{background:var(--bl)} .ua-vistoria{background:var(--gn)}
 .user-info{flex:1;min-width:0}
 .user-name{font-size:13.5px;font-weight:600;color:var(--tx)}
 .user-role{font-size:11px;color:var(--tx3);margin-top:1px}
 .role-badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;margin-left:6px}
-.rb-cadastro{background:var(--nv);color:#fff} .rb-adm{background:var(--or);color:#fff} .rb-corretor{background:var(--bl-bg);color:var(--bl)}
+.rb-cadastro{background:var(--nv);color:#fff} .rb-adm{background:var(--or);color:#fff} .rb-corretor{background:var(--bl-bg);color:var(--bl)} .rb-vistoria{background:var(--gn-bg);color:var(--gn)}
 
 /* CHANGE PWD */
 .cpform{background:var(--s);border:1px solid var(--bd);border-radius:var(--rl);padding:14px;display:flex;flex-direction:column;gap:10px}
@@ -257,6 +257,14 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
 
 ::-webkit-scrollbar{width:3px}
 ::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+/* Botões de movimentação rápida */
+.btn-retirar{flex:1;padding:12px;background:var(--cr);color:#fff;border:none;border-radius:10px;font-family:var(--f);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
+.btn-retirar svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-devolver{flex:1;padding:12px;background:var(--gn);color:#fff;border:none;border-radius:10px;font-family:var(--f);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
+.btn-devolver svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.btn-retirar:disabled,.btn-devolver:disabled{opacity:.35;cursor:not-allowed}
+/* Vistoria screen */
+.vis-body{padding:14px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .empty svg[style*="animation"]{stroke:var(--or);fill:none;stroke-width:2;stroke-linecap:round}
 </style>
@@ -292,6 +300,10 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
     <button class="tab hidden" id="tab-usuarios" onclick="showTab('usuarios',this)">
       <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
       Usuários
+    </button>
+    <button class="tab hidden" id="tab-vistoria" onclick="showTab('vistoria',this)">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>
+      Vistoria
     </button>
   </div>
 
@@ -391,6 +403,28 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
       </div>
     </div>
 
+    <!-- VISTORIA (só perfil Vistoria) -->
+    <div class="scr" id="scr-vistoria">
+      <div class="vis-body">
+        <div class="fld"><label>Nome completo do inquilino</label><input id="vis-nome" placeholder="Nome completo" autocomplete="off"></div>
+        <div class="fld-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="fld"><label>CPF</label><input id="vis-cpf" placeholder="000.000.000-00" autocomplete="off"></div>
+          <div class="fld"><label>RG</label><input id="vis-rg" placeholder="00.000.000-0" autocomplete="off"></div>
+        </div>
+        <div class="fld"><label>Código(s) da(s) chave(s)</label><input id="vis-cod" placeholder="Ex: A1.1, A1.2" autocomplete="off"></div>
+        <div class="fld"><label>Observações / Descrição das chaves</label><textarea id="vis-obs" style="height:80px;resize:none" placeholder="Descreva as chaves devolvidas, estado, etc."></textarea></div>
+        <div class="fld"><label>Assinatura do locatário</label>
+          <canvas id="vis-sig" style="width:100%;height:140px;border:2px dashed var(--bd2);border-radius:10px;background:#fff;touch-action:none;cursor:crosshair;display:block"></canvas>
+          <button onclick="visClearSig()" style="margin-top:6px;padding:6px 14px;background:var(--s2);border:1px solid var(--bd);border-radius:7px;font-family:var(--f);font-size:12px;cursor:pointer;color:var(--tx2)">Limpar assinatura</button>
+        </div>
+        <button class="bp" style="margin-top:4px" onclick="gerarComprovanteDevolucao()">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Gerar Comprovante de Devolução
+        </button>
+        <p style="font-size:11.5px;color:var(--tx3);text-align:center;line-height:1.6">Este comprovante é apenas documental e não altera o status das chaves no sistema.</p>
+      </div>
+    </div>
+
     <!-- USUÁRIOS (só Cadastro) -->
     <div class="scr" id="scr-usuarios">
       <div class="abody">
@@ -409,6 +443,7 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
             <div class="fld"><label>Perfil</label>
               <select id="ur">
                 <option value="corretor">Corretor</option>
+                <option value="vistoria">Vistoria</option>
                 <option value="adm">ADM</option>
                 <option value="cadastro">Cadastro</option>
               </select>
@@ -593,6 +628,7 @@ function defaultUsers() {
     { id:"u_cadastro", name:"Administrador", user:"cadastro", pass:"acrc@2024", role:"cadastro" },
     { id:"u_adm",      name:"ADM",           user:"adm",      pass:"adm@2024",  role:"adm" },
     { id:"u_corretor", name:"Corretor",      user:"corretor", pass:"cor@2024",  role:"corretor" },
+    { id:"u_vistoria",  name:"Vistoria",       user:"vistoria",  pass:"vis@2024",  role:"vistoria"  },
   ];
 }
 function defaultKeys() {
@@ -775,9 +811,10 @@ function deleteFoto(url) {
 // PERMISSIONS
 // ══════════════════════════════════════════
 const PERMS = {
-  corretor: { viewKeys:true,  editKey:true,  addKey:false, deleteKey:false, genPDF:false, signature:false, manageUsers:false, viewAdmin:false, viewConfig:false },
-  adm:      { viewKeys:true,  editKey:true,  addKey:true,  deleteKey:true,  genPDF:true,  signature:true,  manageUsers:false, viewAdmin:true,  viewConfig:true  },
-  cadastro: { viewKeys:true,  editKey:true,  addKey:true,  deleteKey:true,  genPDF:true,  signature:true,  manageUsers:true,  viewAdmin:true,  viewConfig:true  },
+  corretor: { viewKeys:true, editKey:false, addKey:false, deleteKey:false, genPDF:false, signature:false, manageUsers:false, viewAdmin:false, viewConfig:false, quickMove:true,  vistoria:false },
+  vistoria: { viewKeys:true, editKey:false, addKey:false, deleteKey:false, genPDF:false, signature:true,  manageUsers:false, viewAdmin:false, viewConfig:false, quickMove:true,  vistoria:true  },
+  adm:      { viewKeys:true, editKey:true,  addKey:true,  deleteKey:true,  genPDF:true,  signature:true,  manageUsers:false, viewAdmin:true,  viewConfig:true,  quickMove:true,  vistoria:false },
+  cadastro: { viewKeys:true, editKey:true,  addKey:true,  deleteKey:true,  genPDF:true,  signature:true,  manageUsers:true,  viewAdmin:true,  viewConfig:true,  quickMove:true,  vistoria:false },
 };
 function can(perm) { return session && (PERMS[session.role]?.[perm] === true); }
 
@@ -835,6 +872,7 @@ async function initApp() {
   // Tabs visibility
   document.getElementById("tab-admin").classList.toggle("hidden", !can("viewAdmin"));
   document.getElementById("tab-usuarios").classList.toggle("hidden", !can("manageUsers"));
+  document.getElementById("tab-vistoria").classList.toggle("hidden", !can("vistoria"));
   // Switch to chaves
   document.querySelectorAll(".tabs .tab").forEach(t=>t.classList.remove("active"));
   document.getElementById("tab-chaves").classList.add("active");
@@ -964,6 +1002,23 @@ function openKey(idx) {
     </div>
     ${histHTML}`;
   const footBtns = [`<button class="bs" onclick="closeSheet('mk')">Fechar</button>`];
+  // Botões de movimentação rápida — todos os perfis com quickMove
+  if(can("quickMove")) {
+    const isDisp = k.status==="DISPONÍVEL"||k.status==="LIVRE";
+    const isIndisp = k.status==="INDISPONÍVEL";
+    if(isDisp) {
+      footBtns.push(`<button class="btn-retirar" onclick="closeSheet('mk');retirarChave(${idx})">
+        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Retirar
+      </button>`);
+    }
+    if(isIndisp) {
+      footBtns.push(`<button class="btn-devolver" onclick="closeSheet('mk');devolverChave(${idx})">
+        <svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        Devolver
+      </button>`);
+    }
+  }
   if(can("genPDF")) footBtns.push(`<button class="bn2" onclick="closeSheet('mk');openPDF(${idx})">${IP} PDF</button>`);
   if(can("editKey")) footBtns.push(`<button class="bp" onclick="closeSheet('mk');openEdit(${idx})">${IE} Editar</button>`);
   document.getElementById("mk-f").innerHTML = footBtns.join("");
@@ -1303,7 +1358,7 @@ function changePwd(){
 // ══════════════════════════════════════════
 // USERS (Cadastro only)
 // ══════════════════════════════════════════
-const ROLE_NAMES={cadastro:"Cadastro",adm:"ADM",corretor:"Corretor"};
+const ROLE_NAMES={cadastro:"Cadastro",adm:"ADM",corretor:"Corretor",vistoria:"Vistoria"};
 function renderUsers(){
   const el=document.getElementById("users-list");
   el.innerHTML=users.map((u,idx)=>{
@@ -1645,7 +1700,163 @@ function showTab(id,btn){
   switchScreen(id);
   if(id==="admin"){renderGer();renderGHist();document.getElementById("ce").value=cfg.emailDest||"";}
   if(id==="usuarios") renderUsers();
+  if(id==="vistoria") setTimeout(visInitSig,100);
 }
+// ══════════════════════════════════════════
+// MOVIMENTAÇÃO RÁPIDA — Retirar / Devolver
+// ══════════════════════════════════════════
+async function retirarChave(idx) {
+  const k = keys[idx];
+  if(k.status === "INDISPONÍVEL") { toast("Chave já está indisponível",true); return; }
+  const prev = {...k};
+  const now = new Date();
+  k.status = "INDISPONÍVEL";
+  k.responsavel = session?.name || "—";
+  k.dataRet = now.toISOString().slice(0,10);
+  k.dataDev = "";
+  const changes = [
+    {campo:"Status", anterior:bl(prev.status), novo:bl(k.status)},
+    {campo:"Responsável", anterior:prev.responsavel||"", novo:k.responsavel},
+    {campo:"Data saída", anterior:prev.dataRet||"", novo:k.dataRet}
+  ];
+  addHist("SAÍDA", k, {prevStatus:prev.status, changes, hora:now.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})});
+  saveAll(); syncKey(k); renderList(); renderGer(); renderGHist();
+  const subj = `Saída de chave — ${k.loc} — ${k.responsavel} — ${now.toLocaleDateString("pt-BR")}`;
+  sendAutoEmail(subj, changes, k);
+  toast(`Chave ${k.loc} retirada por ${k.responsavel}`);
+}
+
+async function devolverChave(idx) {
+  const k = keys[idx];
+  if(k.status !== "INDISPONÍVEL" && k.status !== "NÃO LOCALIZADA") { toast("Chave não está indisponível",true); return; }
+  const prev = {...k};
+  const now = new Date();
+  k.status = "DISPONÍVEL";
+  k.dataDev = now.toISOString().slice(0,10);
+  k.dataRet = "";
+  k.responsavel = "";
+  const changes = [
+    {campo:"Status", anterior:bl(prev.status), novo:bl(k.status)},
+    {campo:"Data devolução", anterior:prev.dataDev||"", novo:k.dataDev},
+    {campo:"Responsável", anterior:prev.responsavel||"", novo:""}
+  ];
+  addHist("DEVOLUÇÃO", k, {prevStatus:prev.status, changes, hora:now.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"}), devolvidoPor:session?.name||"—"});
+  saveAll(); syncKey(k); renderList(); renderGer(); renderGHist();
+  const subj = `Devolução de chave — ${k.loc} — ${now.toLocaleDateString("pt-BR")}`;
+  sendAutoEmail(subj, changes, k);
+  toast(`Chave ${k.loc} devolvida com sucesso`);
+}
+
+// ══════════════════════════════════════════
+// VISTORIA — Comprovante de Devolução
+// ══════════════════════════════════════════
+let visSigCtx=null, visSigDrawing=false, visSigHas=false;
+function visInitSig(){
+  const c=document.getElementById("vis-sig"); if(!c||visSigCtx)return;
+  // Set canvas internal resolution
+  c.width=c.offsetWidth*window.devicePixelRatio||440;
+  c.height=140*window.devicePixelRatio||140;
+  c.style.height="140px";
+  visSigCtx=c.getContext("2d");
+  visSigCtx.scale(window.devicePixelRatio||1,window.devicePixelRatio||1);
+  visSigCtx.strokeStyle="#1B2E4B"; visSigCtx.lineWidth=2.5; visSigCtx.lineCap="round"; visSigCtx.lineJoin="round";
+  const pos=(e)=>{const r=c.getBoundingClientRect();const cl=e.touches?e.touches[0]:e;return{x:(cl.clientX-r.left),y:(cl.clientY-r.top)};};
+  c.addEventListener("mousedown",e=>{visSigDrawing=true;const p=pos(e);visSigCtx.beginPath();visSigCtx.moveTo(p.x,p.y);});
+  c.addEventListener("mousemove",e=>{if(!visSigDrawing)return;const p=pos(e);visSigCtx.lineTo(p.x,p.y);visSigCtx.stroke();visSigHas=true;c.style.borderColor="var(--nv)";c.style.borderStyle="solid";});
+  c.addEventListener("mouseup",()=>visSigDrawing=false);
+  c.addEventListener("touchstart",e=>{e.preventDefault();visSigDrawing=true;const p=pos(e);visSigCtx.beginPath();visSigCtx.moveTo(p.x,p.y);},{passive:false});
+  c.addEventListener("touchmove",e=>{e.preventDefault();if(!visSigDrawing)return;const p=pos(e);visSigCtx.lineTo(p.x,p.y);visSigCtx.stroke();visSigHas=true;},{passive:false});
+  c.addEventListener("touchend",()=>visSigDrawing=false);
+}
+function visClearSig(){
+  if(!visSigCtx)return;
+  const c=document.getElementById("vis-sig");
+  visSigCtx.clearRect(0,0,c.width,c.height);
+  c.style.borderColor=""; c.style.borderStyle="";
+  visSigHas=false;
+}
+function visGetSig(){return visSigHas?document.getElementById("vis-sig").toDataURL("image/png"):null;}
+
+async function gerarComprovanteDevolucao(){
+  const nome=(document.getElementById("vis-nome").value||"").trim();
+  const cpf=(document.getElementById("vis-cpf").value||"").trim();
+  const rg=(document.getElementById("vis-rg").value||"").trim();
+  const cod=(document.getElementById("vis-cod").value||"").trim();
+  const obs=(document.getElementById("vis-obs").value||"").trim();
+  if(!nome){toast("Digite o nome do inquilino",true);return;}
+  if(!cod){toast("Informe o(s) código(s) da(s) chave(s)",true);return;}
+  const sigData=visGetSig();
+  const hoje=new Date().toLocaleDateString("pt-BR");
+  const hora=new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+  try{
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
+    const PW=210,PH=297,MARGIN=14,FOOTER_H=14;
+    // Header
+    doc.setFillColor(27,46,75); doc.rect(0,0,PW,32,"F");
+    doc.setFillColor(232,101,26); doc.rect(0,28,PW,4,"F");
+    const logoB64="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";
+    if(logoB64) try{doc.addImage("data:image/jpeg;base64,"+logoB64,"JPEG",MARGIN,4,22,22);}catch(e){}
+    doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(15);
+    doc.text("ACRC IMÓVEIS",40,12);
+    doc.setFont("helvetica","normal"); doc.setFontSize(8.5);
+    doc.text("Comprovante de Devolução de Chaves",40,18);
+    doc.setFontSize(7.5);
+    doc.text(`Emitido em ${hoje} às ${hora} por ${session?.name||"—"}`,40,24);
+    // Título box
+    doc.setFillColor(242,242,240); doc.roundedRect(MARGIN,36,PW-MARGIN*2,18,2,2,"F");
+    doc.setTextColor(27,46,75); doc.setFont("helvetica","bold"); doc.setFontSize(14);
+    doc.text("DEVOLUÇÃO DE CHAVES",MARGIN+6,47);
+    doc.setDrawColor(220,220,216); doc.line(MARGIN,58,PW-MARGIN,58);
+    // Campos
+    let y=66;
+    const field=(label,value)=>{
+      doc.setFontSize(7.5); doc.setTextColor(160,160,156); doc.setFont("helvetica","normal");
+      doc.text(label.toUpperCase(),MARGIN,y);
+      doc.setFontSize(11); doc.setTextColor(25,25,23); doc.setFont("helvetica","bold");
+      const lines=doc.splitTextToSize(String(value||"—"),PW-MARGIN*2-4);
+      doc.text(lines,MARGIN,y+6);
+      y+=8+(lines.length-1)*5+10;
+    };
+    field("Nome completo do inquilino",nome);
+    field("CPF",cpf||"Não informado");
+    field("RG",rg||"Não informado");
+    field("Tipo de saída","Devolução das Chaves");
+    field("Código(s) da(s) chave(s)",cod);
+    if(obs) field("Observações / Descrição",obs);
+    y+=6;
+    // Assinatura do locatário
+    y=Math.max(y,PH-FOOTER_H-70);
+    if(sigData){
+      doc.setFontSize(8); doc.setTextColor(150,150,146); doc.setFont("helvetica","normal");
+      doc.text("ASSINATURA DO LOCATÁRIO",MARGIN,y);
+      try{doc.addImage(sigData,"PNG",MARGIN,y+3,90,30);}catch(e){}
+      doc.setDrawColor(180,180,176); doc.line(MARGIN,y+36,MARGIN+90,y+36);
+      doc.setFontSize(8); doc.setTextColor(80,80,80);
+      doc.text(nome,MARGIN+45,y+41,{align:"center"});
+    } else {
+      doc.setDrawColor(180,180,176); doc.line(MARGIN,y+20,MARGIN+90,y+20);
+      doc.setFontSize(8); doc.setTextColor(100,100,96); doc.setFont("helvetica","normal");
+      doc.text("Assinatura do locatário",MARGIN+45,y+25,{align:"center"});
+      doc.setFont("helvetica","bold"); doc.setTextColor(25,25,23);
+      doc.text(nome,MARGIN+45,y+32,{align:"center"});
+    }
+    // Vistoriador ACRC
+    doc.setDrawColor(180,180,176); doc.line(120,y+20,196,y+20);
+    doc.setFontSize(8); doc.setTextColor(100,100,96); doc.setFont("helvetica","normal");
+    doc.text("Responsável pela Vistoria — ACRC Imóveis",158,y+25,{align:"center"});
+    doc.setFont("helvetica","bold"); doc.setTextColor(25,25,23);
+    doc.text(session?.name||"ACRC Imóveis",158,y+32,{align:"center"});
+    // Footer
+    doc.setFillColor(27,46,75); doc.rect(0,PH-FOOTER_H,PW,FOOTER_H,"F");
+    doc.setFillColor(232,101,26); doc.rect(0,PH-FOOTER_H,PW,1.5,"F");
+    doc.setTextColor(255,255,255); doc.setFont("helvetica","normal"); doc.setFontSize(7.5);
+    doc.text("ACRC Imóveis  ·  www.acrcimoveis.com.br  ·  Blumenau / SC",PW/2,PH-FOOTER_H+9,{align:"center"});
+    doc.save(`ACRC_Vistoria_${cod.replace(/[^a-zA-Z0-9]/g,"_")}_${hoje.replace(/\//g,"-")}.pdf`);
+    toast("Comprovante gerado!");
+  }catch(e){console.error(e);toast("Erro ao gerar comprovante",true);}
+}
+
 function showATab(id,btn){
   // Show CSV export only for cadastro profile on cfg tab
   const csvSec = document.getElementById('csv-section');
