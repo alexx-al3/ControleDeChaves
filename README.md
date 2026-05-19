@@ -1,90 +1,191 @@
-# 🔑 ACRC Imóveis — Controle de Chaves v4.0
+# 🔑 ACRC Imóveis — Sistema Inteligente de Gestão de Chaves Imobiliárias
 
-Sistema completo de controle de chaves com perfis de usuário, assinatura digital, histórico por chave, relatórios automáticos por email e auditoria total.
+<p align="center">
+  <img src="./assets/banner-acrc.png" width="100%">
+</p>
 
----
+<p align="center">
+Sistema desenvolvido para otimizar a gestão operacional de chaves imobiliárias com rastreabilidade, auditoria e controle em tempo real.
+</p>
 
-## 🚀 Deploy no Vercel
+<p align="center">
 
-### Passo 1 — Repositório GitHub
-1. Acesse **github.com** → **New repository** → nome: `acrc-chaves`
-2. Clique em **"uploading an existing file"**
-3. Faça upload de **todos** os arquivos desta pasta:
-   - `index.html`
-   - `manifest.json`
-   - `vercel.json`
-   - `package.json`
-   - `api/send-email.js`
-4. Clique **Commit changes**
+![Status](https://img.shields.io/badge/status-online-success?style=for-the-badge)
+![PWA](https://img.shields.io/badge/PWA-Mobile-blue?style=for-the-badge)
+![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?style=for-the-badge\&logo=supabase\&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-Deploy-black?style=for-the-badge\&logo=vercel)
+![JavaScript](https://img.shields.io/badge/JavaScript-ES6-yellow?style=for-the-badge\&logo=javascript)
 
-### Passo 2 — Deploy no Vercel
-1. Acesse **vercel.com/new**
-2. Importe o repositório `acrc-chaves`
-3. Clique **Deploy**
-4. Em ~60 segundos você recebe a URL pública
+</p>
 
 ---
 
-## 👥 Usuários padrão
+# 🌎 Sistema Online
 
-| Usuário    | Senha       | Perfil    |
-|------------|-------------|-----------|
-| `cadastro` | `acrc@2024` | Cadastro  |
-| `adm`      | `adm@2024`  | ADM       |
-| `corretor` | `cor@2024`  | Corretor  |
-
-> ⚠️ **Altere as senhas no primeiro acesso** pelo perfil Cadastro → Admin → Config
+🔗 https://controledechavesacrc.vercel.app
 
 ---
 
-## 🔒 Permissões por perfil
+# 🚀 Sobre o Projeto
 
-| Funcionalidade         | Corretor | ADM | Cadastro |
-|------------------------|:--------:|:---:|:--------:|
-| Ver chaves             | ✅       | ✅  | ✅       |
-| Editar chave           | ✅*      | ✅  | ✅       |
-| Registrar foto         | ✅       | ✅  | ✅       |
-| Datas de saída/retorno | ✅       | ✅  | ✅       |
-| Gerar PDF              | ❌       | ✅  | ✅       |
-| Assinatura digital     | ❌       | ✅  | ✅       |
-| Gerenciar chaves       | ❌       | ✅  | ✅       |
-| Gerenciar usuários     | ❌       | ❌  | ✅       |
-| Ver histórico          | ❌       | ✅  | ✅       |
-| Configurações          | ❌       | ✅  | ✅       |
+O **ACRC Controle de Chaves** é uma plataforma web desenvolvida para gerenciamento operacional de chaves imobiliárias, oferecendo rastreabilidade completa, auditoria de movimentações e controle em tempo real.
 
-*Corretor: não edita código do imóvel nem observações
+O sistema foi criado para substituir processos manuais em papel e planilhas, centralizando todas as movimentações em uma aplicação moderna, rápida e responsiva.
 
 ---
 
-## ✉️ Configurar email automático (quando quiser)
+# ✨ Funcionalidades
 
-### No Google
-1. Acesse **myaccount.google.com → Segurança**
-2. Ative **Verificação em duas etapas**
-3. Vá em **Senhas de app** → Gerar → nome `ACRC Chaves`
-4. Anote a senha de 16 caracteres
-
-### No Vercel
-1. Vá em **Settings → Environment Variables**
-2. Adicione:
-   - `GMAIL_USER` → `seuemail@gmail.com`
-   - `GMAIL_PASS` → `senha-de-16-caracteres`
-   - `EMAIL_DEST` → `destinatario@acrcimoveis.com.br`
-3. Clique **Redeploy**
-
-Pronto! Todo salvamento enviará relatório automático por email.
+✅ Controle de retiradas e devoluções
+✅ Histórico completo por chave
+✅ Auditoria de alterações
+✅ Sistema de permissões por perfil
+✅ Upload de fotos das chaves
+✅ Geração automática de comprovantes PDF
+✅ Assinatura digital integrada
+✅ Relatórios automáticos por e-mail
+✅ Busca e filtros em tempo real
+✅ Aplicação PWA instalável
+✅ Persistência offline com localStorage
+✅ Interface moderna focada em produtividade e usabilidade
 
 ---
 
-## 🗄️ Conectar Supabase (banco de dados compartilhado)
+# 🎥 Demonstração
 
-### No Supabase
-1. Acesse **supabase.com** → **New project**
-2. Anote a **URL** e a **anon key** (em Settings → API)
-3. No SQL Editor, execute:
+<p align="center">
+  <img src="./assets/demo.gif" width="100%">
+</p>
+
+---
+
+# 📸 Preview do Sistema
+
+<p align="center">
+  <img src="./assets/preview.png" width="100%">
+</p>
+
+---
+
+# 🧠 Arquitetura
+
+```mermaid
+graph LR
+
+A[Frontend HTML CSS JS] --> B[Supabase PostgreSQL]
+A --> C[Vercel Functions]
+C --> D[SMTP Gmail]
+B --> E[Supabase Storage]
+```
+
+---
+
+# ⚙️ Stack Tecnológica
+
+| Camada               | Tecnologia                |
+| -------------------- | ------------------------- |
+| Frontend             | HTML5 + CSS3 + JavaScript |
+| Backend              | Vercel Functions          |
+| Banco de Dados       | Supabase PostgreSQL       |
+| Storage              | Supabase Storage          |
+| Hospedagem           | Vercel                    |
+| Emails               | Nodemailer + Gmail SMTP   |
+| Mobile               | PWA                       |
+| Persistência Offline | localStorage              |
+
+---
+
+# 🚀 Deploy no Vercel
+
+## 1. Clone o projeto
+
+```bash
+git clone https://github.com/alexx-al3/acrc-chaves.git
+```
+
+---
+
+## 2. Instale as dependências
+
+```bash
+npm install
+```
+
+---
+
+## 3. Faça deploy
+
+```bash
+vercel
+```
+
+---
+
+# 🗄️ Configuração do Supabase
+
+## 1. Criar projeto
+
+Acesse:
+
+```text
+https://supabase.com
+```
+
+Depois:
+
+```text
+New Project
+```
+
+Defina:
+
+* Nome do projeto
+* Senha do banco
+* Região
+
+---
+
+## 2. Obter credenciais
+
+Vá em:
+
+```text
+Settings → API
+```
+
+Copie:
+
+* Project URL
+* Anon Public Key
+
+---
+
+# ⚙️ Configurar no Sistema
+
+No início do `index.html`:
+
+```javascript
+const SUPA_URL = "https://xxxx.supabase.co";
+const SUPA_KEY = "sua-anon-key";
+```
+
+---
+
+# 🧱 Estrutura do Banco de Dados
+
+Abra:
+
+```text
+Supabase → SQL Editor → New Query
+```
+
+Cole o SQL abaixo:
 
 ```sql
--- Tabela de chaves
+-- =========================================
+-- TABELA DE CHAVES
+-- =========================================
+
 CREATE TABLE keys (
   id TEXT PRIMARY KEY,
   loc TEXT NOT NULL,
@@ -99,7 +200,10 @@ CREATE TABLE keys (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Tabela de histórico
+-- =========================================
+-- TABELA DE HISTÓRICO
+-- =========================================
+
 CREATE TABLE history (
   id BIGINT PRIMARY KEY DEFAULT extract(epoch from now())*1000,
   tipo TEXT,
@@ -114,7 +218,10 @@ CREATE TABLE history (
   extra JSONB
 );
 
--- Tabela de usuários
+-- =========================================
+-- TABELA DE USUÁRIOS
+-- =========================================
+
 CREATE TABLE users (
   id TEXT PRIMARY KEY,
   name TEXT,
@@ -124,59 +231,195 @@ CREATE TABLE users (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Habilitar RLS (Row Level Security) - básico
+-- =========================================
+-- HABILITAR RLS
+-- =========================================
+
 ALTER TABLE keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 
--- Policy: permite tudo com anon key (ajuste conforme necessidade)
-CREATE POLICY "allow_all" ON keys FOR ALL USING (true);
-CREATE POLICY "allow_all" ON history FOR ALL USING (true);
-CREATE POLICY "allow_all" ON users FOR ALL USING (true);
-```
+-- =========================================
+-- POLÍTICAS
+-- =========================================
 
-### No index.html
-Substitua no início do `<script>`:
-```javascript
-const SUPA_URL = "https://xxxx.supabase.co";   // sua URL
-const SUPA_KEY = "eyJ...";                       // sua anon key
-```
+CREATE POLICY "allow_all_keys"
+ON keys
+FOR ALL
+USING (true);
 
-O app detecta automaticamente e começa a usar o Supabase como banco.
+CREATE POLICY "allow_all_history"
+ON history
+FOR ALL
+USING (true);
+
+CREATE POLICY "allow_all_users"
+ON users
+FOR ALL
+USING (true);
+```
 
 ---
 
-## 📱 Instalar como app no celular
+# 📦 Configuração Storage (Fotos)
 
-**iPhone/iPad:** Safari → Compartilhar → "Adicionar à Tela de Início"  
-**Android:** Chrome → Menu (⋮) → "Adicionar à tela inicial"
+## Criar bucket
+
+Vá em:
+
+```text
+Storage → Create Bucket
+```
+
+Nome:
+
+```text
+chave-fotos
+```
+
+Marque:
+
+```text
+Public Bucket
+```
 
 ---
 
-## 📁 Estrutura do projeto
+# ✉️ Configuração de Email
 
+## Variáveis de ambiente no Vercel
+
+Vá em:
+
+```text
+Settings → Environment Variables
 ```
+
+Adicione:
+
+```env
+GMAIL_USER=seuemail@gmail.com
+GMAIL_PASS=senha-app-google
+EMAIL_DEST=destino@email.com
+```
+
+Depois faça:
+
+```bash
+Redeploy
+```
+
+---
+
+# 👥 Usuários de exemplo
+
+| Perfil      | Usuário     |
+| --------    | --------    |
+| Cadastro    | cadastro    |
+| ADM         | adm         |
+| Corretor    | corretor    |
+| vistoriador | vistoriador |
+
+> ⚠️ Configure suas próprias credenciais diretamente no banco de dados.
+
+---
+
+# 🔒 Recursos de Segurança
+
+✅ Row Level Security (RLS)
+✅ Controle de permissões por perfil
+✅ Auditoria imutável
+✅ Variáveis protegidas no Vercel
+✅ Histórico completo de alterações
+✅ Sessão autenticada
+
+---
+
+# 📱 Instalação Mobile (PWA)
+
+## iPhone / iPad
+
+Safari → Compartilhar → Adicionar à Tela de Início
+
+## Android
+
+Chrome → Menu → Adicionar à tela inicial
+
+---
+
+# 📂 Estrutura do Projeto
+
+```bash
 acrc-chaves/
-├── index.html          ← App completo
-├── manifest.json       ← PWA config
-├── vercel.json         ← Deploy config
-├── package.json        ← Dependências (Nodemailer)
-├── api/
-│   └── send-email.js   ← Backend email (Vercel Function)
-└── README.md
+├── index.html
+├── manifest.json
+├── vercel.json
+├── package.json
+├── README.md
+├── assets/
+│   ├── banner-acrc.png
+│   ├── preview.png
+│   └── demo.gif
+└── api/
+    └── send-email.js
 ```
 
 ---
 
-## 🔄 Regras de status automáticas
+# 🔄 Fluxo Operacional
 
-| Ação                          | Status resultante |
-|-------------------------------|:-----------------:|
-| Nova chave cadastrada         | LIVRE             |
-| Código do imóvel preenchido   | DISPONÍVEL        |
-| PDF gerado (temporário)       | INDISPONÍVEL      |
-| PDF Definitivo/Novo Locatário | LIVRE (limpa dados) |
-| Devolução registrada          | DISPONÍVEL/LIVRE  |
+```text
+Login → Busca → Movimentação → Histórico → PDF → Email → Auditoria
+```
 
 ---
 
+# 🌎 Diferenciais do Projeto
+
+🚀 Sistema real em produção
+📱 Aplicação PWA instalável
+⚡ Deploy contínuo via GitHub + Vercel
+🧠 Desenvolvido em HTML, CSS e JavaScript puro
+🔒 Auditoria completa de movimentações
+☁️ Infraestrutura cloud escalável
+🎨 Interface moderna focada em experiência do usuário
+
+---
+
+# 📈 Possíveis Evoluções
+
+* Dashboard analítico
+* Notificações push
+* Integração com CRM imobiliário
+* Multiunidades
+* Assinatura eletrônica jurídica
+* App nativo mobile
+* Relatórios avançados
+
+---
+
+# 👨‍💻 Desenvolvido por
+
+## Alex Alves
+
+💻 Desenvolvedor de Sistemas
+🎨 UI & Experiência Visual
+🚀 Criador de Soluções Reais
+
+<p align="left">
+
+<a href="https://linkedin.com/in/alex-alves-40b2721a3">
+  <img src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white"/>
+</a>
+
+<a href="https://instagram.com/alexx.al3">
+  <img src="https://img.shields.io/badge/Instagram-E4405F?style=for-the-badge&logo=instagram&logoColor=white"/>
+</a>
+
+</p>
+
+---
+
+<p align="center">
+🚀 Desenvolvendo soluções reais com criatividade, tecnologia e experiência visual.
+</p>
