@@ -1,4 +1,4 @@
-# 🔑 ACRC Imóveis — Controle de Chaves v3.0
+# 🔑 ACRC Imóveis — Controle de Chaves v4.0
 
 Sistema completo de controle de chaves com perfis de usuário, assinatura digital, histórico por chave, relatórios automáticos por email e auditoria total.
 
@@ -180,4 +180,3 @@ acrc-chaves/
 
 ---
 
-Dúvidas? Abra uma conversa com o Claude e cole este README.
