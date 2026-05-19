@@ -27,6 +27,7 @@
 <meta name="msapplication-TileColor" content="#1B2E4B">
 <meta name="msapplication-config" content="none">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -265,6 +266,14 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
 .btn-retirar:disabled,.btn-devolver:disabled{opacity:.35;cursor:not-allowed}
 /* Vistoria screen */
 .vis-body{padding:14px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+/* Etiquetas */
+.etq-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:4px}
+.etq-card{background:var(--s);border:1.5px solid var(--bd);border-radius:var(--r);padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:border-color .15s}
+.etq-card:hover{border-color:var(--or)}
+.etq-card.sel{border-color:var(--or);background:var(--or-bg)}
+.etq-loc{font-family:var(--m);font-size:13px;font-weight:600;color:var(--tx)}
+.etq-cod{font-size:11px;color:var(--tx3)}
+.etq-qr{width:80px;height:80px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .empty svg[style*="animation"]{stroke:var(--or);fill:none;stroke-width:2;stroke-linecap:round}
 </style>
@@ -300,6 +309,10 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
     <button class="tab hidden" id="tab-usuarios" onclick="showTab('usuarios',this)">
       <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
       Usuários
+    </button>
+    <button class="tab hidden" id="tab-etiquetas" onclick="showTab('etiquetas',this)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+      Etiquetas
     </button>
     <button class="tab hidden" id="tab-vistoria" onclick="showTab('vistoria',this)">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>
@@ -379,9 +392,12 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
       <div id="as-cfg" style="display:none;padding:14px;overflow-y:auto">
         <p class="asec">Email para relatórios</p>
         <div class="cpform" style="margin-bottom:16px">
-          <div class="fld"><label>Email destino</label><input type="email" id="ce" placeholder="contato@acrcimoveis.com.br"></div>
-          <div class="fld"><label>Email remetente (Gmail)</label><input type="email" id="cge" placeholder="chaves@gmail.com"><p class="fhint">Configure no painel do Vercel: GMAIL_USER e GMAIL_PASS</p></div>
-          <button class="addbtn" onclick="saveCfg()">Salvar configurações</button>
+          <p class="hint" style="background:var(--am-bg);color:var(--am);padding:10px 12px;border-radius:8px;line-height:1.7">
+            ✉️ O envio de e-mail está configurado diretamente no servidor (Vercel).<br>
+            Para alterar o destinatário ou remetente, acesse:<br>
+            <strong>vercel.com → seu projeto → Settings → Environment Variables</strong><br>
+            Variáveis: <strong>EMAIL_DEST</strong>, <strong>GMAIL_USER</strong>, <strong>GMAIL_PASS</strong>
+          </p>
         </div>
         <p class="asec">Alterar minha senha</p>
         <div class="cpform">
@@ -422,6 +438,25 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
           Gerar Comprovante de Devolução
         </button>
         <p style="font-size:11.5px;color:var(--tx3);text-align:center;line-height:1.6">Este comprovante é apenas documental e não altera o status das chaves no sistema.</p>
+      </div>
+    </div>
+
+    <!-- ETIQUETAS (Cadastro) -->
+    <div class="scr" id="scr-etiquetas">
+      <div class="topbar">
+        <div class="sw">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" id="etq-q" placeholder="Filtrar chaves..." oninput="renderEtiquetas()" autocomplete="off">
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button onclick="etqSelectAll()" style="padding:5px 12px;border-radius:20px;border:1px solid var(--bd);font-size:12px;cursor:pointer;background:var(--s);color:var(--tx2);font-family:var(--f)">Selecionar tudo</button>
+          <button onclick="etqClearAll()" style="padding:5px 12px;border-radius:20px;border:1px solid var(--bd);font-size:12px;cursor:pointer;background:var(--s);color:var(--tx2);font-family:var(--f)">Limpar seleção</button>
+          <button onclick="gerarEtiquetas()" style="padding:5px 14px;border-radius:20px;border:none;background:var(--or);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--f)">⬇ Baixar PNG</button>
+        </div>
+      </div>
+      <div class="lmeta" id="etq-meta" style="padding:5px 14px 2px;flex-shrink:0"></div>
+      <div style="padding:10px 14px 80px;overflow-y:auto;flex:1">
+        <div class="etq-grid" id="etq-grid"></div>
       </div>
     </div>
 
@@ -493,7 +528,7 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
 <div class="bkdp" id="mp" onclick="bdck('mp',event)">
   <div class="sheet">
     <div class="shdl"></div>
-    <div class="shhd"><h2 id="mp-t">Comprovante PDF</h2><button class="shcl" onclick="closeSheet('mp')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="shhd"><h2 id="mp-t">Protocolo de Saída</h2><button class="shcl" onclick="closeSheet('mp')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
     <div class="shbd">
       <div class="fld"><label>Destinatário</label>
         <div class="tgrid">
@@ -526,7 +561,7 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
     </div>
     <div class="shft">
       <button class="bs" onclick="closeSheet('mp')">Cancelar</button>
-      <button class="bp" onclick="gerarPDF()"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Gerar PDF</button>
+      <button class="bp" onclick="gerarPDF()"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Gerar Protocolo</button>
     </div>
   </div>
 </div>
@@ -587,8 +622,9 @@ async function sbFetch(table, method="GET", body=null, query="") {
 }
 
 // key obj → supabase row
-// foto: envia URL pública ou string vazia (nunca base64 para o banco)
+// foto: envia URL pública se disponível; base64 fica só no localStorage
 function keyToRow(k) {
+  // Só envia URL para o Supabase (base64 fica local como cache)
   const fotoVal = (k.foto && k.foto.startsWith("http")) ? k.foto : "";
   return { id:k.id, loc:k.loc, codigo:k.codigo||"", status:k.status||"LIVRE",
     responsavel:k.responsavel||"", data_ret:k.dataRet||"", data_dev:k.dataDev||"",
@@ -873,6 +909,7 @@ async function initApp() {
   document.getElementById("tab-admin").classList.toggle("hidden", !can("viewAdmin"));
   document.getElementById("tab-usuarios").classList.toggle("hidden", !can("manageUsers"));
   document.getElementById("tab-vistoria").classList.toggle("hidden", !can("vistoria"));
+  document.getElementById("tab-etiquetas").classList.toggle("hidden", !can("manageUsers"));
   // Switch to chaves
   document.querySelectorAll(".tabs .tab").forEach(t=>t.classList.remove("active"));
   document.getElementById("tab-chaves").classList.add("active");
@@ -881,7 +918,7 @@ async function initApp() {
   document.getElementById("klist").innerHTML='<div class="empty"><svg viewBox="0 0 24 24" style="animation:spin 1s linear infinite;stroke:var(--or);fill:none;stroke-width:2;stroke-linecap:round"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg><p style="margin-top:8px">Sincronizando...</p></div>';
   await loadFromSupabase();
   renderList();
-  if(can("viewAdmin")) { renderGer(); renderGHist(); document.getElementById("ce").value=cfg.emailDest||""; }
+  if(can("viewAdmin")) { renderGer(); renderGHist(); }
   if(can("manageUsers")) renderUsers();
 }
 
@@ -1019,7 +1056,7 @@ function openKey(idx) {
       </button>`);
     }
   }
-  if(can("genPDF")) footBtns.push(`<button class="bn2" onclick="closeSheet('mk');openPDF(${idx})">${IP} PDF</button>`);
+  if(can("genPDF")) footBtns.push(`<button class="bn2" onclick="closeSheet('mk');openPDF(${idx})">${IP} Protocolo</button>`);
   if(can("editKey")) footBtns.push(`<button class="bp" onclick="closeSheet('mk');openEdit(${idx})">${IE} Editar</button>`);
   document.getElementById("mk-f").innerHTML = footBtns.join("");
   openSheet("mk");
@@ -1059,7 +1096,7 @@ function openEdit(idx) {
       <div class="fld"><label>Data devolução</label><input type="date" id="edev" value="${k.dataDev}"></div>
     </div>
     <div class="fld"><label>Observações</label><textarea id="eob" ${isCorretor?"disabled":""}>${k.obs}</textarea></div>
-    ${can("genPDF")?`<button style="display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 14px;border-radius:8px;border:1.5px solid var(--or);background:var(--or-bg);font-family:var(--f);font-size:13px;font-weight:500;cursor:pointer;width:100%;color:var(--or);margin-top:4px;line-height:1.3;max-height:42px;overflow:hidden" onclick="saveAndPDF()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--or)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/></svg> Salvar e gerar comprovante</button>`:""}`;
+    ${can("genPDF")?`<button style="display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 14px;border-radius:8px;border:1.5px solid var(--or);background:var(--or-bg);font-family:var(--f);font-size:13px;font-weight:500;cursor:pointer;width:100%;color:var(--or);margin-top:4px;line-height:1.3;max-height:42px;overflow:hidden" onclick="saveAndPDF()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--or)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/></svg> Salvar e gerar protocolo</button>`:""}`;
   openSheet("me");
   // Apply required field highlights on open based on current status
   setTimeout(()=>onStatusChange(keys[eidx]?.status||""),50);
@@ -1124,16 +1161,19 @@ async function saveEdit(andPDF=false) {
   // Upload nova foto para Supabase Storage se arquivo foi selecionado
   if(ephotoFile) {
     toast("Enviando foto...");
-    // Delete old photo if it was stored in Storage
     if(prev.foto && prev.foto.startsWith("http")) deleteFoto(prev.foto);
+    // Gera base64 para preview imediato (persiste offline)
+    const localB64 = await new Promise(res => {
+      const reader = new FileReader();
+      reader.onload = e => res(e.target.result);
+      reader.readAsDataURL(ephotoFile);
+    });
+    ephoto = localB64; // usa base64 enquanto faz upload
     const uploadedUrl = await uploadFoto(ephotoFile, keys[eidx].id);
     if(uploadedUrl) {
-      ephoto = uploadedUrl;
+      ephoto = uploadedUrl; // substitui pela URL do Storage
     } else {
-      // Fallback: keep as base64 preview if upload failed
-      const pp = document.getElementById("pp");
-      if(pp && pp.src) ephoto = pp.src;
-      toast("Foto salva localmente (sem conexão)");
+      toast("Foto salva localmente (sem conexão ao servidor)");
     }
     ephotoFile = null;
   }
@@ -1343,7 +1383,7 @@ function renderKeyHistModal(idx, page) {
 }
 
 // CONFIG
-function saveCfg(){cfg.emailDest=document.getElementById("ce").value.trim();saveAll();toast("Configurações salvas");}
+function saveCfg(){saveAll();toast("Configurações salvas");}
 function changePwd(){
   const cur=document.getElementById("pc").value,nw=document.getElementById("pn2").value,cf=document.getElementById("pk").value;
   const me=users.find(u=>u.id===session?.id);
@@ -1701,6 +1741,7 @@ function showTab(id,btn){
   if(id==="admin"){renderGer();renderGHist();document.getElementById("ce").value=cfg.emailDest||"";}
   if(id==="usuarios") renderUsers();
   if(id==="vistoria") setTimeout(visInitSig,100);
+  if(id==="etiquetas"){ etqSelected.clear(); setTimeout(renderEtiquetas,50); }
 }
 // ══════════════════════════════════════════
 // MOVIMENTAÇÃO RÁPIDA — Retirar / Devolver
@@ -1855,6 +1896,130 @@ async function gerarComprovanteDevolucao(){
     doc.save(`ACRC_Vistoria_${cod.replace(/[^a-zA-Z0-9]/g,"_")}_${hoje.replace(/\//g,"-")}.pdf`);
     toast("Comprovante gerado!");
   }catch(e){console.error(e);toast("Erro ao gerar comprovante",true);}
+}
+
+// ══════════════════════════════════════════
+// ETIQUETAS — QR Code por chave
+// ══════════════════════════════════════════
+let etqSelected = new Set();
+
+function renderEtiquetas() {
+  const q = (document.getElementById("etq-q")?.value||"").trim().toLowerCase();
+  const filtered = keys.filter(k => !q || k.loc.toLowerCase().includes(q) || k.codigo.toLowerCase().includes(q));
+  const meta = document.getElementById("etq-meta");
+  if(meta) meta.textContent = `${filtered.length} chaves · ${etqSelected.size} selecionadas`;
+  const grid = document.getElementById("etq-grid");
+  if(!grid) return;
+  grid.innerHTML = "";
+  filtered.forEach(k => {
+    const idx = keys.indexOf(k);
+    const card = document.createElement("div");
+    card.className = "etq-card" + (etqSelected.has(idx) ? " sel" : "");
+    card.onclick = () => { etqSelected.has(idx) ? etqSelected.delete(idx) : etqSelected.add(idx); renderEtiquetas(); };
+    const locEl = document.createElement("div"); locEl.className = "etq-loc"; locEl.textContent = k.loc;
+    const codEl = document.createElement("div"); codEl.className = "etq-cod"; codEl.textContent = k.codigo || "Sem código";
+    const qrWrap = document.createElement("div"); qrWrap.className = "etq-qr"; qrWrap.id = "qr_" + idx;
+    card.appendChild(locEl); card.appendChild(qrWrap); card.appendChild(codEl);
+    grid.appendChild(card);
+    // Gera QR code com localização + código
+    try {
+      new QRCode(qrWrap, {
+        text: k.loc + (k.codigo ? " — " + k.codigo : ""),
+        width: 80, height: 80,
+        colorDark: "#1B2E4B", colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    } catch(e) {}
+  });
+}
+
+function etqSelectAll() {
+  keys.forEach((k,i) => {
+    const q=(document.getElementById("etq-q")?.value||"").trim().toLowerCase();
+    if(!q || k.loc.toLowerCase().includes(q) || k.codigo.toLowerCase().includes(q)) etqSelected.add(i);
+  });
+  renderEtiquetas();
+}
+function etqClearAll() { etqSelected.clear(); renderEtiquetas(); }
+
+async function gerarEtiquetas() {
+  if(etqSelected.size === 0) { toast("Selecione ao menos uma chave",true); return; }
+  toast("Gerando etiquetas...");
+  const selected = [...etqSelected].map(i => keys[i]).filter(Boolean);
+  const PER_ROW = 3;
+  const ETQ_W = 200, ETQ_H = 200;
+  const PADDING = 10;
+  const rows = Math.ceil(selected.length / PER_ROW);
+  const canvasW = PER_ROW * (ETQ_W + PADDING) + PADDING;
+  const canvasH = rows * (ETQ_H + PADDING) + PADDING;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvasW; canvas.height = canvasH;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#f2f2f0"; ctx.fillRect(0,0,canvasW,canvasH);
+  for(let i=0; i<selected.length; i++) {
+    const k = selected[i];
+    const col = i % PER_ROW;
+    const row = Math.floor(i / PER_ROW);
+    const x = PADDING + col * (ETQ_W + PADDING);
+    const y = PADDING + row * (ETQ_H + PADDING);
+    // Card background
+    ctx.fillStyle = "#ffffff";
+    roundRect(ctx, x, y, ETQ_W, ETQ_H, 8);
+    ctx.fillStyle = "#1B2E4B";
+    roundRect(ctx, x, y, ETQ_W, 32, 8, true);
+    ctx.fillStyle = "#E8651A";
+    ctx.fillRect(x, y+28, ETQ_W, 4);
+    // Header text
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "bold 16px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(k.loc, x + ETQ_W/2, y+20);
+    // Subtext
+    ctx.fillStyle = "#525250";
+    ctx.font = "11px Arial";
+    if(k.codigo) ctx.fillText(k.codigo, x + ETQ_W/2, y+50);
+    // QR code — gerar via canvas temporário
+    try {
+      await new Promise(resolve => {
+        const tmpDiv = document.createElement("div");
+        tmpDiv.style.position="absolute"; tmpDiv.style.left="-9999px";
+        document.body.appendChild(tmpDiv);
+        const qr = new QRCode(tmpDiv, {
+          text: k.loc + (k.codigo ? " — " + k.codigo : ""),
+          width: 110, height: 110,
+          colorDark: "#1B2E4B", colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.M
+        });
+        setTimeout(() => {
+          const img = tmpDiv.querySelector("img") || tmpDiv.querySelector("canvas");
+          if(img) {
+            if(img.tagName === "IMG") {
+              const tmp = new Image(); tmp.onload = () => { ctx.drawImage(tmp, x+(ETQ_W-110)/2, y+56); document.body.removeChild(tmpDiv); resolve(); };
+              tmp.src = img.src;
+            } else { ctx.drawImage(img, x+(ETQ_W-110)/2, y+56); document.body.removeChild(tmpDiv); resolve(); }
+          } else { document.body.removeChild(tmpDiv); resolve(); }
+        }, 100);
+      });
+    } catch(e) {}
+    // Endereço embaixo do QR (se quiser adicionar no futuro)
+  }
+  // Download PNG
+  const link = document.createElement("a");
+  link.download = "ACRC_Etiquetas_" + new Date().toISOString().slice(0,10) + ".png";
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+  toast("Etiquetas geradas!");
+}
+
+function roundRect(ctx, x, y, w, h, r, fill=true) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y); ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+  if(fill) ctx.fill();
 }
 
 function showATab(id,btn){
