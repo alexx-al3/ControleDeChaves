@@ -1,10 +1,6 @@
 # 🔑 ACRC Imóveis — Sistema Inteligente de Gestão de Chaves Imobiliárias
 
 <p align="center">
-  <img src="./assets/banner-acrc.png" width="100%">
-</p>
-
-<p align="center">
 Sistema desenvolvido para otimizar a gestão operacional de chaves imobiliárias com rastreabilidade, auditoria e controle em tempo real.
 </p>
 
@@ -36,34 +32,18 @@ O sistema foi criado para substituir processos manuais em papel e planilhas, cen
 
 # ✨ Funcionalidades
 
-✅ Controle de retiradas e devoluções
-✅ Histórico completo por chave
-✅ Auditoria de alterações
-✅ Sistema de permissões por perfil
-✅ Upload de fotos das chaves
-✅ Geração automática de comprovantes PDF
-✅ Assinatura digital integrada
-✅ Relatórios automáticos por e-mail
-✅ Busca e filtros em tempo real
-✅ Aplicação PWA instalável
-✅ Persistência offline com localStorage
-✅ Interface moderna focada em produtividade e usabilidade
-
----
-
-# 🎥 Demonstração
-
-<p align="center">
-  <img src="./assets/demo.gif" width="100%">
-</p>
-
----
-
-# 📸 Preview do Sistema
-
-<p align="center">
-  <img src="./assets/preview.png" width="100%">
-</p>
+✅ Controle de retiradas e devoluções<br>
+✅ Histórico completo por chave<br>
+✅ Auditoria de alterações<br>
+✅ Sistema de permissões por perfil<br>
+✅ Upload de fotos das chaves<br>
+✅ Geração automática de comprovantes PDF<br>
+✅ Assinatura digital integrada<br>
+✅ Relatórios automáticos por e-mail<br>
+✅ Busca e filtros em tempo real<br>
+✅ Aplicação PWA instalável<br>
+✅ Persistência offline com localStorage<br>
+✅ Interface moderna focada em produtividade e usabilidade<br>
 
 ---
 
