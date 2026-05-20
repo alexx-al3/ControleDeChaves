@@ -421,7 +421,7 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
     <!-- VISTORIA (só perfil Vistoria) -->
     <div class="scr" id="scr-vistoria">
       <div class="vis-body">
-        <div class="fld"><label>Nome completo do inquilino</label><input id="vis-nome" placeholder="Nome completo" autocomplete="off"></div>
+        <div class="fld"><label>Nome completo do inquilino</label><input id="vis-nome" placeholder="Nome completo do inquilino" autocomplete="off"></div>
         <div class="fld-row" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="fld"><label>CPF</label><input id="vis-cpf" placeholder="000.000.000-00" autocomplete="off"></div>
           <div class="fld"><label>RG</label><input id="vis-rg" placeholder="00.000.000-0" autocomplete="off"></div>
@@ -558,7 +558,7 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
           <button class="tbtn" data-t="TERCEIRO" onclick="selT(this)"><span class="tico">🤝</span>Terceiro</button>
         </div>
       </div>
-      <div class="fld"><label>Nome completo</label><input id="pnome" placeholder="Nome do recebedor"></div>
+      <div class="fld"><label>Nome e Relação</label><input id="pnome" placeholder="Ex: João Silva — Proprietário"></div>
       <div class="fld"><label>CPF / RG (opcional)</label><input id="pcpf" placeholder="000.000.000-00"></div>
       <div class="fld"><label>Tipo de saída</label>
         <div class="sgrid">
@@ -1636,7 +1636,7 @@ async function gerarPDF(){
       y+=8+(lines.length-1)*5+10;
     };
 
-    field("Destinatário", nome+(cpf?` — CPF/RG: ${cpf}`:""));
+    field("Nome / Relação", nome+(cpf?` — CPF/RG: ${cpf}`:""));
     field("Tipo de destinatário", pTipo);
     field("Data de saída", fd(k.dataRet)||"—");
     field("Devolução prevista", pSaida==="TEMPORÁRIA"?fd(k.dataDev):"Não se aplica");
@@ -2014,9 +2014,9 @@ async function etqGerarPDF() {
   toast("Gerando PDF...");
   try {
     const {jsPDF} = window.jspdf;
-    // Etiqueta VERTICAL: 34mm × 54mm — 4 por linha em A4
-    const EW=34, EH=54;
-    const COLS=4, GAP=3, MGNH=7, MGNV=7;
+    // Etiqueta VERTICAL: 38mm × 58mm — 4 por linha em A4
+    const EW=38, EH=58;
+    const COLS=4, GAP=2, MGNH=6, MGNV=6;
     const PW=210, PH=297;
     const doc = new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
     let col=0, row=0;
@@ -2034,34 +2034,33 @@ async function etqGerarPDF() {
       doc.roundedRect(x,y,EW,EH,1,1,"S");
 
       // ── Header azul compacto — só espaço para o texto ──
-      const HDR = 8; // altura do header em mm
+      const HDR = 9; // altura do header em mm
       doc.setFillColor(27,46,75);
       doc.roundedRect(x,y,EW,HDR,1,1,"F");
-      doc.rect(x,y+HDR-2,EW,2,"F"); // cobrir cantos arredondados na base
+      doc.rect(x,y+HDR-2,EW,2,"F");
 
       // ── Linha laranja separadora ─────────────────────────
       doc.setFillColor(232,101,26);
-      doc.rect(x,y+HDR,EW,0.8,"F");
+      doc.rect(x,y+HDR,EW,1,"F");
 
       // ── LOC + CÓDIGO — mesmo tamanho, negrito, 1 linha ──
       doc.setTextColor(255,255,255);
       doc.setFont("helvetica","bold");
-      doc.setFontSize(7.5);
+      doc.setFontSize(8.5);
       const locCod = item.loc + (item.codigo ? "  " + item.codigo : "");
-      // Se não cabe em 1 linha, reduz fonte
-      let fs = 7.5;
-      while(doc.getTextWidth(locCod) > EW-3 && fs > 5){ fs-=0.3; doc.setFontSize(fs); }
-      doc.text(locCod, x+EW/2, y+HDR-1.8, {align:"center"});
+      let fs = 8.5;
+      while(doc.getTextWidth(locCod) > EW-3 && fs > 5.5){ fs-=0.3; doc.setFontSize(fs); }
+      doc.text(locCod, x+EW/2, y+HDR-2, {align:"center"});
 
       // ── Área de conteúdo ─────────────────────────────────
-      const CONTENT_TOP = y+HDR+0.8+2.5; // início do conteúdo
-      const QR_SIZE = 18; // mm do QR Code
+      const CONTENT_TOP = y+HDR+1+3; // início do conteúdo
+      const QR_SIZE = 22; // mm do QR Code — maior
       const HAS_QR = !!item.url;
-      const CONTENT_BOT = HAS_QR ? y+EH-QR_SIZE-2 : y+EH-2; // fundo do conteúdo
-      const TW = EW-4; // largura de texto
-      const CX = x+EW/2; // centro horizontal
-      const LINE_H = 3.6; // espaçamento entre linhas
-      const FONT_SIZE = 6.5; // fonte padrão do conteúdo
+      const CONTENT_BOT = HAS_QR ? y+EH-QR_SIZE-2 : y+EH-2.5;
+      const TW = EW-5;
+      const CX = x+EW/2;
+      const LINE_H = 4.2; // espaçamento maior
+      const FONT_SIZE = 7.5; // fonte maior
 
       // Calcular total de linhas para centralizar verticalmente
       doc.setFontSize(FONT_SIZE); doc.setFont("helvetica","normal");
