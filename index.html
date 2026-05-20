@@ -2000,7 +2000,7 @@ function etqRenderFila() {
     if(!item.url) return;
     const wrap = document.getElementById("etq-qr-"+item.id);
     if(!wrap || wrap.children.length) return;
-    try { new QRCode(wrap,{text:item.url,width:56,height:56,colorDark:"#1B2E4B",colorLight:"#fff",correctLevel:QRCode.CorrectLevel.M}); } catch(e){}
+    try { new QRCode(wrap,{text:item.url,width:56,height:56,colorDark:"#000000",colorLight:"#fff",correctLevel:QRCode.CorrectLevel.M}); } catch(e){}
   });
 }
 
@@ -2014,69 +2014,101 @@ async function etqGerarPDF() {
   toast("Gerando PDF...");
   try {
     const {jsPDF} = window.jspdf;
-    // Etiqueta VERTICAL: 34mm × 54mm (largura × altura)
-    const EW=34, EH=54; // mm — vertical
-    const COLS=4, GAP=3, MGNH=8, MGNV=8;
+    // Etiqueta VERTICAL: 34mm × 54mm — 4 por linha em A4
+    const EW=34, EH=54;
+    const COLS=4, GAP=3, MGNH=7, MGNV=7;
     const PW=210, PH=297;
     const doc = new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
     let col=0, row=0;
-    for(let i=0; i<etqFila.length; i++) {
+
+    for(let i=0; i<etqFila.length; i++){
       const item = etqFila[i];
-      // Nova página se necessário
-      if(i>0 && col===0 && MGNV + row*(EH+GAP) + EH > PH-MGNV) {
+      if(i>0 && col===0 && MGNV+row*(EH+GAP)+EH > PH-MGNV){
         doc.addPage(); row=0; col=0;
       }
       const x = MGNH + col*(EW+GAP);
       const y = MGNV + row*(EH+GAP);
-      // Borda
-      doc.setDrawColor(200,200,196); doc.setLineWidth(0.3);
-      doc.roundedRect(x,y,EW,EH,1.5,1.5,"S");
-      // Header azul
+
+      // ── Borda fina da etiqueta ──────────────────────────
+      doc.setDrawColor(180,180,180); doc.setLineWidth(0.25);
+      doc.roundedRect(x,y,EW,EH,1,1,"S");
+
+      // ── Header azul compacto — só espaço para o texto ──
+      const HDR = 8; // altura do header em mm
       doc.setFillColor(27,46,75);
-      doc.roundedRect(x,y,EW,10,1.5,1.5,"F");
-      doc.rect(x,y+5,EW,5,"F");
-      // Faixa laranja
+      doc.roundedRect(x,y,EW,HDR,1,1,"F");
+      doc.rect(x,y+HDR-2,EW,2,"F"); // cobrir cantos arredondados na base
+
+      // ── Linha laranja separadora ─────────────────────────
       doc.setFillColor(232,101,26);
-      doc.rect(x,y+10,EW,1.2,"F");
-      // LOC no header
-      doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(7);
-      doc.text(item.loc, x+EW/2, y+6, {align:"center"});
-      // Código abaixo do loc
-      if(item.codigo){
-        doc.setFontSize(5.5); doc.setFont("helvetica","normal");
-        doc.text(item.codigo, x+EW/2, y+9.5, {align:"center"});
-      }
-      // Conteúdo vertical
-      let cy = y+14.5;
-      const TW = EW-5; // text width
-      // Edifício
+      doc.rect(x,y+HDR,EW,0.8,"F");
+
+      // ── LOC + CÓDIGO — mesmo tamanho, negrito, 1 linha ──
+      doc.setTextColor(255,255,255);
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(7.5);
+      const locCod = item.loc + (item.codigo ? "  " + item.codigo : "");
+      // Se não cabe em 1 linha, reduz fonte
+      let fs = 7.5;
+      while(doc.getTextWidth(locCod) > EW-3 && fs > 5){ fs-=0.3; doc.setFontSize(fs); }
+      doc.text(locCod, x+EW/2, y+HDR-1.8, {align:"center"});
+
+      // ── Área de conteúdo ─────────────────────────────────
+      const CONTENT_TOP = y+HDR+0.8+2.5; // início do conteúdo
+      const QR_SIZE = 18; // mm do QR Code
+      const HAS_QR = !!item.url;
+      const CONTENT_BOT = HAS_QR ? y+EH-QR_SIZE-2 : y+EH-2; // fundo do conteúdo
+      const TW = EW-4; // largura de texto
+      const CX = x+EW/2; // centro horizontal
+      const LINE_H = 3.6; // espaçamento entre linhas
+      const FONT_SIZE = 6.5; // fonte padrão do conteúdo
+
+      // Calcular total de linhas para centralizar verticalmente
+      doc.setFontSize(FONT_SIZE); doc.setFont("helvetica","normal");
+      let allLines = [];
+      if(item.edificio) allLines.push(...doc.splitTextToSize(item.edificio, TW));
+      // endereço — negrito
+      const endLines = doc.splitTextToSize(item.endereco, TW);
+      allLines.push(...endLines);
+      if(item.vaga) allLines.push(...doc.splitTextToSize(item.vaga, TW));
+
+      const totalH = allLines.length * LINE_H;
+      const availH = CONTENT_BOT - CONTENT_TOP;
+      // Centralizar verticalmente no espaço disponível
+      let cy = CONTENT_TOP + Math.max(0, (availH - totalH) / 2);
+
+      // Edifício — preto, tamanho padrão
       if(item.edificio){
-        doc.setFont("helvetica","normal"); doc.setFontSize(5.8); doc.setTextColor(100,100,96);
-        const eLines=doc.splitTextToSize(item.edificio,TW);
-        doc.text(eLines, x+2.5, cy); cy+=eLines.length*3.2;
+        doc.setFont("helvetica","normal"); doc.setFontSize(FONT_SIZE);
+        doc.setTextColor(0,0,0);
+        const eLines = doc.splitTextToSize(item.edificio, TW);
+        eLines.forEach(l=>{ doc.text(l, CX, cy, {align:"center"}); cy+=LINE_H; });
       }
-      // Endereço — negrito destaque
-      doc.setFont("helvetica","bold"); doc.setFontSize(6); doc.setTextColor(25,25,23);
-      const endLines=doc.splitTextToSize(item.endereco,TW);
-      doc.text(endLines, x+2.5, cy); cy+=endLines.length*3.3+1;
-      // Vaga
+      // Endereço — negrito, preto
+      doc.setFont("helvetica","bold"); doc.setFontSize(FONT_SIZE);
+      doc.setTextColor(0,0,0);
+      endLines.forEach(l=>{ doc.text(l, CX, cy, {align:"center"}); cy+=LINE_H; });
+
+      // Vaga — normal, preto
       if(item.vaga){
-        doc.setFont("helvetica","normal"); doc.setFontSize(5.5); doc.setTextColor(80,80,80);
-        const vLines=doc.splitTextToSize(item.vaga,TW);
-        doc.text(vLines, x+2.5, cy); cy+=vLines.length*3+1;
+        doc.setFont("helvetica","normal"); doc.setFontSize(FONT_SIZE);
+        doc.setTextColor(0,0,0);
+        const vLines = doc.splitTextToSize(item.vaga, TW);
+        vLines.forEach(l=>{ doc.text(l, CX, cy, {align:"center"}); cy+=LINE_H; });
       }
-      // QR Code — centralizado na parte inferior da etiqueta vertical
-      if(item.url){
+
+      // ── QR Code — base da etiqueta, centralizado ────────
+      if(HAS_QR){
         try{
-          const qrData=await etqGetQRDataURL(item.url,100);
+          const qrData = await etqGetQRDataURL(item.url, 120);
           if(qrData){
-            const qrSize=16;
-            const qrX=x+(EW-qrSize)/2;
-            const qrY=y+EH-qrSize-3;
-            doc.addImage(qrData,"PNG",qrX,qrY,qrSize,qrSize);
+            const qrX = x+(EW-QR_SIZE)/2;
+            const qrY = y+EH-QR_SIZE-1.5;
+            doc.addImage(qrData,"PNG",qrX,qrY,QR_SIZE,QR_SIZE);
           }
         }catch(e){}
       }
+
       col++;
       if(col>=COLS){ col=0; row++; }
     }
@@ -2098,7 +2130,7 @@ function etqGetQRDataURL(text, size=80) {
       const tmp = document.createElement("div");
       tmp.style.cssText="position:absolute;left:-9999px;top:-9999px";
       document.body.appendChild(tmp);
-      new QRCode(tmp,{text,width:size,height:size,colorDark:"#1B2E4B",colorLight:"#fff",correctLevel:QRCode.CorrectLevel.M});
+      new QRCode(tmp,{text,width:size,height:size,colorDark:"#000000",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M});
       setTimeout(()=>{
         const img=tmp.querySelector("img");
         const cnv=tmp.querySelector("canvas");
