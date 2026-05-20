@@ -267,13 +267,12 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
 /* Vistoria screen */
 .vis-body{padding:14px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
 /* Etiquetas */
-.etq-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:4px}
-.etq-card{background:var(--s);border:1.5px solid var(--bd);border-radius:var(--r);padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;transition:border-color .15s}
-.etq-card:hover{border-color:var(--or)}
-.etq-card.sel{border-color:var(--or);background:var(--or-bg)}
-.etq-loc{font-family:var(--m);font-size:13px;font-weight:600;color:var(--tx)}
-.etq-cod{font-size:11px;color:var(--tx3)}
-.etq-qr{width:80px;height:80px}
+.etq-preview{background:#fff;border:1.5px solid var(--bd);border-radius:8px;padding:10px;display:flex;gap:10px;align-items:flex-start}
+.etq-preview-info{flex:1;min-width:0}
+.etq-preview-loc{font-family:var(--m);font-size:13px;font-weight:700;color:var(--nv)}
+.etq-preview-end{font-size:12px;font-weight:600;color:var(--tx);margin-top:2px}
+.etq-preview-sub{font-size:11px;color:var(--tx3);margin-top:1px}
+.etq-preview-qr{width:56px;height:56px;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 .empty svg[style*="animation"]{stroke:var(--or);fill:none;stroke-width:2;stroke-linecap:round}
 </style>
@@ -441,22 +440,44 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
       </div>
     </div>
 
-    <!-- ETIQUETAS (Cadastro) -->
+    <!-- ETIQUETAS (Cadastro/ADM) -->
     <div class="scr" id="scr-etiquetas">
-      <div class="topbar">
-        <div class="sw">
-          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="search" id="etq-q" placeholder="Filtrar chaves..." oninput="renderEtiquetas()" autocomplete="off">
+      <!-- TOP: seletor de chave + formulário -->
+      <div class="topbar" style="gap:9px">
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="sw" style="flex:1">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="search" id="etq-key-q" placeholder="Selecionar chave (localização ou código)..." oninput="etqSearchKey()" autocomplete="off">
+          </div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-          <button onclick="etqSelectAll()" style="padding:5px 12px;border-radius:20px;border:1px solid var(--bd);font-size:12px;cursor:pointer;background:var(--s);color:var(--tx2);font-family:var(--f)">Selecionar tudo</button>
-          <button onclick="etqClearAll()" style="padding:5px 12px;border-radius:20px;border:1px solid var(--bd);font-size:12px;cursor:pointer;background:var(--s);color:var(--tx2);font-family:var(--f)">Limpar seleção</button>
-          <button onclick="gerarEtiquetas()" style="padding:5px 14px;border-radius:20px;border:none;background:var(--or);color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--f)">⬇ Baixar PNG</button>
+        <!-- Dropdown resultado busca -->
+        <div id="etq-key-results" style="display:none;background:var(--s);border:1px solid var(--bd);border-radius:var(--r);max-height:140px;overflow-y:auto;box-shadow:var(--sh)"></div>
+        <!-- Campos da etiqueta -->
+        <div id="etq-selected-info" style="display:none;background:var(--gn-bg);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--gn);font-weight:500"></div>
+        <div class="frow">
+          <div class="fld"><label>Edifício / Condomínio / Loteamento</label><input id="etq-edificio" placeholder="Ex: Ed. San Marino" autocomplete="off"></div>
+          <div class="fld"><label>Vaga de Garagem</label><input id="etq-vaga" placeholder="Ex: 1 Vaga | Nº 302 | Térreo" autocomplete="off"></div>
+        </div>
+        <div class="fld"><label>Endereço completo</label><input id="etq-endereco" placeholder="Ex: R. Victor Konder, 230 AP: 201 BL A" autocomplete="off"></div>
+        <div class="fld"><label>URL para QR Code (opcional)</label><input id="etq-url" placeholder="https://..." oninput="etqPreviewQR()" autocomplete="off"></div>
+        <div style="display:flex;gap:8px">
+          <button onclick="etqAdicionarFila()" class="bp" style="flex:1;padding:10px;font-size:13px">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Adicionar à fila
+          </button>
+          <button onclick="etqGerarPDF()" style="flex:1;padding:10px;font-size:13px;font-weight:600;background:var(--nv);color:#fff;border:none;border-radius:10px;cursor:pointer;font-family:var(--f);display:flex;align-items:center;justify-content:center;gap:6px">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Gerar PDF (<span id="etq-count">0</span>)
+          </button>
         </div>
       </div>
-      <div class="lmeta" id="etq-meta" style="padding:5px 14px 2px;flex-shrink:0"></div>
-      <div style="padding:10px 14px 80px;overflow-y:auto;flex:1">
-        <div class="etq-grid" id="etq-grid"></div>
+      <!-- FILA de etiquetas -->
+      <div style="padding:8px 14px 80px;overflow-y:auto;flex:1" id="etq-fila-wrap">
+        <div id="etq-fila-empty" style="text-align:center;padding:32px 20px;color:var(--tx3);font-size:13px">
+          <div style="font-size:28px;margin-bottom:8px">🏷️</div>
+          Nenhuma etiqueta na fila ainda.<br>Preencha os campos acima e clique em "Adicionar à fila".
+        </div>
+        <div id="etq-fila" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
     </div>
 
@@ -1741,7 +1762,7 @@ function showTab(id,btn){
   if(id==="admin"){renderGer();renderGHist();document.getElementById("ce").value=cfg.emailDest||"";}
   if(id==="usuarios") renderUsers();
   if(id==="vistoria") setTimeout(visInitSig,100);
-  if(id==="etiquetas"){ etqSelected.clear(); setTimeout(renderEtiquetas,50); }
+  if(id==="etiquetas"){ etqFila=[]; etqRenderFila(); etqKeySelected=null; }
 }
 // ══════════════════════════════════════════
 // MOVIMENTAÇÃO RÁPIDA — Retirar / Devolver
@@ -1899,127 +1920,183 @@ async function gerarComprovanteDevolucao(){
 }
 
 // ══════════════════════════════════════════
-// ETIQUETAS — QR Code por chave
+// ETIQUETAS — Gerador de PDF 5.4×3.4cm
+// Temporário: sem banco, histórico ou auditoria
 // ══════════════════════════════════════════
-let etqSelected = new Set();
+let etqFila = []; // fila temporária de etiquetas
+let etqKeySelected = null; // chave selecionada atualmente
 
-function renderEtiquetas() {
-  const q = (document.getElementById("etq-q")?.value||"").trim().toLowerCase();
-  const filtered = keys.filter(k => !q || k.loc.toLowerCase().includes(q) || k.codigo.toLowerCase().includes(q));
-  const meta = document.getElementById("etq-meta");
-  if(meta) meta.textContent = `${filtered.length} chaves · ${etqSelected.size} selecionadas`;
-  const grid = document.getElementById("etq-grid");
-  if(!grid) return;
-  grid.innerHTML = "";
-  filtered.forEach(k => {
-    const idx = keys.indexOf(k);
-    const card = document.createElement("div");
-    card.className = "etq-card" + (etqSelected.has(idx) ? " sel" : "");
-    card.onclick = () => { etqSelected.has(idx) ? etqSelected.delete(idx) : etqSelected.add(idx); renderEtiquetas(); };
-    const locEl = document.createElement("div"); locEl.className = "etq-loc"; locEl.textContent = k.loc;
-    const codEl = document.createElement("div"); codEl.className = "etq-cod"; codEl.textContent = k.codigo || "Sem código";
-    const qrWrap = document.createElement("div"); qrWrap.className = "etq-qr"; qrWrap.id = "qr_" + idx;
-    card.appendChild(locEl); card.appendChild(qrWrap); card.appendChild(codEl);
-    grid.appendChild(card);
-    // Gera QR code com localização + código
-    try {
-      new QRCode(qrWrap, {
-        text: k.loc + (k.codigo ? " — " + k.codigo : ""),
-        width: 80, height: 80,
-        colorDark: "#1B2E4B", colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.M
-      });
-    } catch(e) {}
+function etqSearchKey() {
+  const q = (document.getElementById("etq-key-q")?.value||"").trim().toLowerCase();
+  const res = document.getElementById("etq-key-results");
+  const info = document.getElementById("etq-selected-info");
+  if(!q) { res.style.display="none"; return; }
+  const filtered = keys.filter(k => k.loc.toLowerCase().includes(q) || k.codigo.toLowerCase().includes(q)).slice(0,8);
+  if(!filtered.length) { res.style.display="none"; return; }
+  res.style.display="block";
+  res.innerHTML = filtered.map(k => `<div onclick="etqSelectKey('${k.loc}')" style="padding:9px 13px;cursor:pointer;border-bottom:1px solid var(--bd);font-size:13px;display:flex;justify-content:space-between;align-items:center" onmouseover="this.style.background='var(--s2)'" onmouseout="this.style.background=''">
+    <span style="font-family:var(--m);font-weight:600">${k.loc}</span>
+    <span style="font-size:11px;color:var(--tx3)">${k.codigo||"Sem código"}</span>
+  </div>`).join("");
+}
+
+function etqSelectKey(loc) {
+  const k = keys.find(x => x.loc === loc);
+  if(!k) return;
+  etqKeySelected = k;
+  document.getElementById("etq-key-q").value = k.loc + (k.codigo ? " — " + k.codigo : "");
+  document.getElementById("etq-key-results").style.display = "none";
+  document.getElementById("etq-selected-info").style.display = "block";
+  document.getElementById("etq-selected-info").textContent = `✅ Chave selecionada: ${k.loc}${k.codigo ? " · " + k.codigo : ""}`;
+}
+
+function etqPreviewQR() {
+  // QR preview is built inline when adding to queue
+}
+
+function etqAdicionarFila() {
+  if(!etqKeySelected) { toast("Selecione uma chave primeiro",true); return; }
+  const edificio = (document.getElementById("etq-edificio").value||"").trim();
+  const endereco = (document.getElementById("etq-endereco").value||"").trim();
+  const vaga     = (document.getElementById("etq-vaga").value||"").trim();
+  const url      = (document.getElementById("etq-url").value||"").trim();
+  if(!endereco) { toast("Preencha o endereço",true); return; }
+  const item = {
+    loc: etqKeySelected.loc,
+    codigo: etqKeySelected.codigo||"",
+    edificio, endereco, vaga, url,
+    id: Date.now()
+  };
+  etqFila.push(item);
+  etqRenderFila();
+  // Limpar campos (mantém chave selecionada para agilizar)
+  document.getElementById("etq-edificio").value="";
+  document.getElementById("etq-endereco").value="";
+  document.getElementById("etq-vaga").value="";
+  document.getElementById("etq-url").value="";
+  toast(`Etiqueta adicionada — ${etqFila.length} na fila`);
+}
+
+function etqRenderFila() {
+  const el = document.getElementById("etq-fila");
+  const empty = document.getElementById("etq-fila-empty");
+  const count = document.getElementById("etq-count");
+  if(count) count.textContent = etqFila.length;
+  if(!etqFila.length) { el.innerHTML=""; empty.style.display="block"; return; }
+  empty.style.display="none";
+  el.innerHTML = etqFila.map((item,i) => `<div class="etq-preview">
+    <div class="etq-preview-info">
+      <div class="etq-preview-loc">${item.loc}${item.codigo?" · "+item.codigo:""}</div>
+      ${item.edificio?`<div class="etq-preview-sub">${item.edificio}</div>`:""}
+      <div class="etq-preview-end">${item.endereco}</div>
+      ${item.vaga?`<div class="etq-preview-sub">🚗 ${item.vaga}</div>`:""}
+      ${item.url?`<div class="etq-preview-sub" style="color:var(--bl);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.url}</div>`:""}
+    </div>
+    ${item.url?`<div id="etq-qr-${item.id}" class="etq-preview-qr"></div>`:""}
+    <button onclick="etqRemover(${i})" style="background:none;border:none;cursor:pointer;color:var(--tx3);padding:0 0 0 6px;font-size:18px;line-height:1;flex-shrink:0" title="Remover">×</button>
+  </div>`).join("");
+  // Gerar QR codes inline
+  etqFila.forEach(item => {
+    if(!item.url) return;
+    const wrap = document.getElementById("etq-qr-"+item.id);
+    if(!wrap || wrap.children.length) return;
+    try { new QRCode(wrap,{text:item.url,width:56,height:56,colorDark:"#1B2E4B",colorLight:"#fff",correctLevel:QRCode.CorrectLevel.M}); } catch(e){}
   });
 }
 
-function etqSelectAll() {
-  keys.forEach((k,i) => {
-    const q=(document.getElementById("etq-q")?.value||"").trim().toLowerCase();
-    if(!q || k.loc.toLowerCase().includes(q) || k.codigo.toLowerCase().includes(q)) etqSelected.add(i);
-  });
-  renderEtiquetas();
+function etqRemover(i) {
+  etqFila.splice(i,1);
+  etqRenderFila();
 }
-function etqClearAll() { etqSelected.clear(); renderEtiquetas(); }
 
-async function gerarEtiquetas() {
-  if(etqSelected.size === 0) { toast("Selecione ao menos uma chave",true); return; }
-  toast("Gerando etiquetas...");
-  const selected = [...etqSelected].map(i => keys[i]).filter(Boolean);
-  const PER_ROW = 3;
-  const ETQ_W = 200, ETQ_H = 200;
-  const PADDING = 10;
-  const rows = Math.ceil(selected.length / PER_ROW);
-  const canvasW = PER_ROW * (ETQ_W + PADDING) + PADDING;
-  const canvasH = rows * (ETQ_H + PADDING) + PADDING;
-  const canvas = document.createElement("canvas");
-  canvas.width = canvasW; canvas.height = canvasH;
-  const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#f2f2f0"; ctx.fillRect(0,0,canvasW,canvasH);
-  for(let i=0; i<selected.length; i++) {
-    const k = selected[i];
-    const col = i % PER_ROW;
-    const row = Math.floor(i / PER_ROW);
-    const x = PADDING + col * (ETQ_W + PADDING);
-    const y = PADDING + row * (ETQ_H + PADDING);
-    // Card background
-    ctx.fillStyle = "#ffffff";
-    roundRect(ctx, x, y, ETQ_W, ETQ_H, 8);
-    ctx.fillStyle = "#1B2E4B";
-    roundRect(ctx, x, y, ETQ_W, 32, 8, true);
-    ctx.fillStyle = "#E8651A";
-    ctx.fillRect(x, y+28, ETQ_W, 4);
-    // Header text
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 16px monospace";
-    ctx.textAlign = "center";
-    ctx.fillText(k.loc, x + ETQ_W/2, y+20);
-    // Subtext
-    ctx.fillStyle = "#525250";
-    ctx.font = "11px Arial";
-    if(k.codigo) ctx.fillText(k.codigo, x + ETQ_W/2, y+50);
-    // QR code — gerar via canvas temporário
+async function etqGerarPDF() {
+  if(!etqFila.length) { toast("Adicione ao menos uma etiqueta",true); return; }
+  toast("Gerando PDF...");
+  try {
+    const {jsPDF} = window.jspdf;
+    // Etiqueta: 54×34mm — página no tamanho exato da etiqueta para facilitar impressão
+    // Múltiplas etiquetas: colocar 3 por linha em folha A4
+    const EW=54, EH=34; // mm por etiqueta
+    const COLS=3, GAP=3, MGNH=10, MGNV=10;
+    const PW=210, PH=297;
+    const doc = new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
+    let col=0, row=0;
+    for(let i=0; i<etqFila.length; i++) {
+      const item = etqFila[i];
+      if(i>0 && col===0 && row*( EH+GAP)+MGNV > PH-EH-MGNV) {
+        doc.addPage(); row=0; col=0;
+      }
+      const x = MGNH + col*(EW+GAP);
+      const y = MGNV + row*(EH+GAP);
+      // Borda da etiqueta
+      doc.setDrawColor(200,200,196); doc.setLineWidth(0.3);
+      doc.roundedRect(x,y,EW,EH,1.5,1.5,"S");
+      // Faixa header azul
+      doc.setFillColor(27,46,75); doc.roundedRect(x,y,EW,8,1.5,1.5,"F");
+      doc.setFillColor(27,46,75); doc.rect(x,y+4,EW,4,"F"); // retângulo para cobrir cantos arredondados
+      // Faixa laranja
+      doc.setFillColor(232,101,26); doc.rect(x,y+8,EW,1.2,"F");
+      // LOC + Código no header
+      doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(7.5);
+      const locTxt = item.loc + (item.codigo ? "  " + item.codigo : "");
+      doc.text(locTxt, x+EW/2, y+5.5, {align:"center"});
+      // Conteúdo
+      let cy = y+12;
+      // Edifício
+      if(item.edificio) {
+        doc.setFont("helvetica","normal"); doc.setFontSize(6); doc.setTextColor(100,100,96);
+        doc.text(item.edificio, x+2.5, cy); cy+=3.5;
+      }
+      // Endereço — negrito, destaque
+      doc.setFont("helvetica","bold"); doc.setFontSize(6.5); doc.setTextColor(25,25,23);
+      const endLines = doc.splitTextToSize(item.endereco, item.url?EW-18:EW-5);
+      doc.text(endLines, x+2.5, cy); cy+=endLines.length*3.5;
+      // Vaga
+      if(item.vaga) {
+        doc.setFont("helvetica","normal"); doc.setFontSize(5.5); doc.setTextColor(80,80,80);
+        doc.text(item.vaga, x+2.5, cy); cy+=3.2;
+      }
+      // QR Code
+      if(item.url) {
+        try {
+          const qrData = await etqGetQRDataURL(item.url, 80);
+          if(qrData) {
+            const qrSize=12;
+            doc.addImage(qrData,"PNG", x+EW-qrSize-2, y+10, qrSize, qrSize);
+          }
+        } catch(e){}
+      }
+      col++;
+      if(col>=COLS) { col=0; row++; }
+    }
+    const hoje = new Date().toLocaleDateString("pt-BR").replace(/\//g,"-");
+    doc.save("ACRC_Etiquetas_"+hoje+".pdf");
+    // Limpar fila após emissão
+    etqFila = [];
+    etqRenderFila();
+    etqKeySelected = null;
+    document.getElementById("etq-key-q").value="";
+    document.getElementById("etq-selected-info").style.display="none";
+    toast("PDF gerado! Fila limpa.");
+  } catch(e) { console.error(e); toast("Erro ao gerar PDF",true); }
+}
+
+function etqGetQRDataURL(text, size=80) {
+  return new Promise(resolve => {
     try {
-      await new Promise(resolve => {
-        const tmpDiv = document.createElement("div");
-        tmpDiv.style.position="absolute"; tmpDiv.style.left="-9999px";
-        document.body.appendChild(tmpDiv);
-        const qr = new QRCode(tmpDiv, {
-          text: k.loc + (k.codigo ? " — " + k.codigo : ""),
-          width: 110, height: 110,
-          colorDark: "#1B2E4B", colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.M
-        });
-        setTimeout(() => {
-          const img = tmpDiv.querySelector("img") || tmpDiv.querySelector("canvas");
-          if(img) {
-            if(img.tagName === "IMG") {
-              const tmp = new Image(); tmp.onload = () => { ctx.drawImage(tmp, x+(ETQ_W-110)/2, y+56); document.body.removeChild(tmpDiv); resolve(); };
-              tmp.src = img.src;
-            } else { ctx.drawImage(img, x+(ETQ_W-110)/2, y+56); document.body.removeChild(tmpDiv); resolve(); }
-          } else { document.body.removeChild(tmpDiv); resolve(); }
-        }, 100);
-      });
-    } catch(e) {}
-    // Endereço embaixo do QR (se quiser adicionar no futuro)
-  }
-  // Download PNG
-  const link = document.createElement("a");
-  link.download = "ACRC_Etiquetas_" + new Date().toISOString().slice(0,10) + ".png";
-  link.href = canvas.toDataURL("image/png");
-  link.click();
-  toast("Etiquetas geradas!");
-}
-
-function roundRect(ctx, x, y, w, h, r, fill=true) {
-  ctx.beginPath();
-  ctx.moveTo(x+r, y); ctx.lineTo(x+w-r, y);
-  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
-  ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
-  ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
-  ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y);
-  ctx.closePath();
-  if(fill) ctx.fill();
+      const tmp = document.createElement("div");
+      tmp.style.cssText="position:absolute;left:-9999px;top:-9999px";
+      document.body.appendChild(tmp);
+      new QRCode(tmp,{text,width:size,height:size,colorDark:"#1B2E4B",colorLight:"#fff",correctLevel:QRCode.CorrectLevel.M});
+      setTimeout(()=>{
+        const img=tmp.querySelector("img");
+        const cnv=tmp.querySelector("canvas");
+        if(img && img.src){ document.body.removeChild(tmp); resolve(img.src); }
+        else if(cnv){ const url=cnv.toDataURL(); document.body.removeChild(tmp); resolve(url); }
+        else { document.body.removeChild(tmp); resolve(null); }
+      },150);
+    } catch(e){ resolve(null); }
+  });
 }
 
 function showATab(id,btn){
