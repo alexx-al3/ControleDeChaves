@@ -2014,60 +2014,71 @@ async function etqGerarPDF() {
   toast("Gerando PDF...");
   try {
     const {jsPDF} = window.jspdf;
-    // Etiqueta: 54×34mm — página no tamanho exato da etiqueta para facilitar impressão
-    // Múltiplas etiquetas: colocar 3 por linha em folha A4
-    const EW=54, EH=34; // mm por etiqueta
-    const COLS=3, GAP=3, MGNH=10, MGNV=10;
+    // Etiqueta VERTICAL: 34mm × 54mm (largura × altura)
+    const EW=34, EH=54; // mm — vertical
+    const COLS=4, GAP=3, MGNH=8, MGNV=8;
     const PW=210, PH=297;
     const doc = new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
     let col=0, row=0;
     for(let i=0; i<etqFila.length; i++) {
       const item = etqFila[i];
-      if(i>0 && col===0 && row*( EH+GAP)+MGNV > PH-EH-MGNV) {
+      // Nova página se necessário
+      if(i>0 && col===0 && MGNV + row*(EH+GAP) + EH > PH-MGNV) {
         doc.addPage(); row=0; col=0;
       }
       const x = MGNH + col*(EW+GAP);
       const y = MGNV + row*(EH+GAP);
-      // Borda da etiqueta
+      // Borda
       doc.setDrawColor(200,200,196); doc.setLineWidth(0.3);
       doc.roundedRect(x,y,EW,EH,1.5,1.5,"S");
-      // Faixa header azul
-      doc.setFillColor(27,46,75); doc.roundedRect(x,y,EW,8,1.5,1.5,"F");
-      doc.setFillColor(27,46,75); doc.rect(x,y+4,EW,4,"F"); // retângulo para cobrir cantos arredondados
+      // Header azul
+      doc.setFillColor(27,46,75);
+      doc.roundedRect(x,y,EW,10,1.5,1.5,"F");
+      doc.rect(x,y+5,EW,5,"F");
       // Faixa laranja
-      doc.setFillColor(232,101,26); doc.rect(x,y+8,EW,1.2,"F");
-      // LOC + Código no header
-      doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(7.5);
-      const locTxt = item.loc + (item.codigo ? "  " + item.codigo : "");
-      doc.text(locTxt, x+EW/2, y+5.5, {align:"center"});
-      // Conteúdo
-      let cy = y+12;
+      doc.setFillColor(232,101,26);
+      doc.rect(x,y+10,EW,1.2,"F");
+      // LOC no header
+      doc.setTextColor(255,255,255); doc.setFont("helvetica","bold"); doc.setFontSize(7);
+      doc.text(item.loc, x+EW/2, y+6, {align:"center"});
+      // Código abaixo do loc
+      if(item.codigo){
+        doc.setFontSize(5.5); doc.setFont("helvetica","normal");
+        doc.text(item.codigo, x+EW/2, y+9.5, {align:"center"});
+      }
+      // Conteúdo vertical
+      let cy = y+14.5;
+      const TW = EW-5; // text width
       // Edifício
-      if(item.edificio) {
-        doc.setFont("helvetica","normal"); doc.setFontSize(6); doc.setTextColor(100,100,96);
-        doc.text(item.edificio, x+2.5, cy); cy+=3.5;
+      if(item.edificio){
+        doc.setFont("helvetica","normal"); doc.setFontSize(5.8); doc.setTextColor(100,100,96);
+        const eLines=doc.splitTextToSize(item.edificio,TW);
+        doc.text(eLines, x+2.5, cy); cy+=eLines.length*3.2;
       }
-      // Endereço — negrito, destaque
-      doc.setFont("helvetica","bold"); doc.setFontSize(6.5); doc.setTextColor(25,25,23);
-      const endLines = doc.splitTextToSize(item.endereco, item.url?EW-18:EW-5);
-      doc.text(endLines, x+2.5, cy); cy+=endLines.length*3.5;
+      // Endereço — negrito destaque
+      doc.setFont("helvetica","bold"); doc.setFontSize(6); doc.setTextColor(25,25,23);
+      const endLines=doc.splitTextToSize(item.endereco,TW);
+      doc.text(endLines, x+2.5, cy); cy+=endLines.length*3.3+1;
       // Vaga
-      if(item.vaga) {
+      if(item.vaga){
         doc.setFont("helvetica","normal"); doc.setFontSize(5.5); doc.setTextColor(80,80,80);
-        doc.text(item.vaga, x+2.5, cy); cy+=3.2;
+        const vLines=doc.splitTextToSize(item.vaga,TW);
+        doc.text(vLines, x+2.5, cy); cy+=vLines.length*3+1;
       }
-      // QR Code
-      if(item.url) {
-        try {
-          const qrData = await etqGetQRDataURL(item.url, 80);
-          if(qrData) {
-            const qrSize=12;
-            doc.addImage(qrData,"PNG", x+EW-qrSize-2, y+10, qrSize, qrSize);
+      // QR Code — centralizado na parte inferior da etiqueta vertical
+      if(item.url){
+        try{
+          const qrData=await etqGetQRDataURL(item.url,100);
+          if(qrData){
+            const qrSize=16;
+            const qrX=x+(EW-qrSize)/2;
+            const qrY=y+EH-qrSize-3;
+            doc.addImage(qrData,"PNG",qrX,qrY,qrSize,qrSize);
           }
-        } catch(e){}
+        }catch(e){}
       }
       col++;
-      if(col>=COLS) { col=0; row++; }
+      if(col>=COLS){ col=0; row++; }
     }
     const hoje = new Date().toLocaleDateString("pt-BR").replace(/\//g,"-");
     doc.save("ACRC_Etiquetas_"+hoje+".pdf");
