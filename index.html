@@ -258,6 +258,86 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
 
 ::-webkit-scrollbar{width:3px}
 ::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+
+/* ── Feedback visual de botões ───────────────────────── */
+@keyframes btnPress{0%{transform:scale(1)}40%{transform:scale(.95)}100%{transform:scale(1)}}
+@keyframes btnGlow{0%{box-shadow:0 0 0 0 rgba(232,101,26,.4)}70%{box-shadow:0 0 0 8px rgba(232,101,26,0)}100%{box-shadow:0 0 0 0 rgba(232,101,26,0)}}
+@keyframes btnGlowBlue{0%{box-shadow:0 0 0 0 rgba(27,46,75,.4)}70%{box-shadow:0 0 0 8px rgba(27,46,75,0)}100%{box-shadow:0 0 0 0 rgba(27,46,75,0)}}
+@keyframes btnGlowRed{0%{box-shadow:0 0 0 0 rgba(161,40,40,.4)}70%{box-shadow:0 0 0 8px rgba(161,40,40,0)}100%{box-shadow:0 0 0 0 rgba(161,40,40,0)}}
+@keyframes btnGlowGreen{0%{box-shadow:0 0 0 0 rgba(37,122,53,.4)}70%{box-shadow:0 0 0 8px rgba(37,122,53,0)}100%{box-shadow:0 0 0 0 rgba(37,122,53,0)}}
+
+/* Base para todos os botões interativos */
+.bp,.bs,.bn2,.btn-retirar,.btn-devolver,.lbtn,.addbtn,.bp,.bdng,.chip,
+button[onclick*="openKey"],button[onclick*="showTab"],button[onclick*="etq"],
+button[onclick*="gerarPDF"],button[onclick*="gerarCompr"],button[onclick*="doLogin"],
+.tab,.hbtn,.ibtn,.user-chip{
+  transition: transform .12s ease, box-shadow .2s ease, opacity .12s ease, background .15s ease !important;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+/* Efeito press — aplicado via JS no evento touchstart/mousedown */
+.btn-pressed{
+  transform: scale(.94) !important;
+  opacity: .88 !important;
+}
+/* Botão primário laranja */
+.bp:active,.addbtn:active{
+  animation: btnPress .2s ease, btnGlow .4s ease;
+  background: var(--or-dk) !important;
+}
+/* Botão Retirar */
+.btn-retirar:active{
+  animation: btnPress .2s ease, btnGlowRed .4s ease;
+  background: #8a1f1f !important;
+}
+/* Botão Devolver */
+.btn-devolver:active{
+  animation: btnPress .2s ease, btnGlowGreen .4s ease;
+  background: #1d6130 !important;
+}
+/* Botão azul marinho */
+.bn2:active,.lbtn:active{
+  animation: btnPress .2s ease, btnGlowBlue .4s ease;
+  background: var(--nv-dk) !important;
+}
+/* Botão secundário */
+.bs:active{
+  animation: btnPress .18s ease;
+  background: var(--s3) !important;
+}
+/* Tabs */
+.tab:active{
+  animation: btnPress .15s ease;
+}
+/* Chips */
+.chip:active{
+  animation: btnPress .15s ease;
+  opacity: .8 !important;
+}
+/* Icon buttons */
+.ibtn:active,.hbtn:active{
+  animation: btnPress .15s ease;
+  background: var(--s3) !important;
+}
+/* Login button */
+.lbtn{
+  position:relative;overflow:hidden;
+}
+.lbtn::after{
+  content:"";position:absolute;inset:0;background:rgba(255,255,255,.12);
+  opacity:0;transition:opacity .2s;border-radius:inherit;
+}
+.lbtn:active::after{ opacity:1; }
+/* Key cards */
+.kcard:active,.arow:active{
+  animation: btnPress .15s ease;
+  background: var(--s2) !important;
+}
+/* Botão Ver mais */
+button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
+  animation: btnPress .18s ease;
+  background: var(--s3) !important;
+}
 /* Botões de movimentação rápida */
 .btn-retirar{flex:1;padding:12px;background:var(--cr);color:#fff;border:none;border-radius:10px;font-family:var(--f);font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
 .btn-retirar svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -643,18 +723,28 @@ async function sbFetch(table, method="GET", body=null, query="") {
 }
 
 // key obj → supabase row
-// foto: envia URL pública se disponível; base64 fica só no localStorage
+// foto: envia URL se disponível; base64 curto (<50KB) vai como fallback
 function keyToRow(k) {
-  // Só envia URL para o Supabase (base64 fica local como cache)
-  const fotoVal = (k.foto && k.foto.startsWith("http")) ? k.foto : "";
+  let fotoVal = "";
+  if(k.foto && k.foto.startsWith("http")) {
+    fotoVal = k.foto; // URL do Storage — ideal
+  } else if(k.foto && k.foto.startsWith("data:") && k.foto.length < 51200) {
+    fotoVal = k.foto; // base64 pequeno (<50KB) — fallback offline
+  }
   return { id:k.id, loc:k.loc, codigo:k.codigo||"", status:k.status||"LIVRE",
     responsavel:k.responsavel||"", data_ret:k.dataRet||"", data_dev:k.dataDev||"",
     obs:k.obs||"", foto:fotoVal, updated_at: new Date().toISOString() };
 }
 function rowToKey(r) {
+  // Ao carregar do Supabase, verificar se há foto local mais recente (b64)
+  const localKeys = (() => { try { return JSON.parse(localStorage.getItem(SK.k))||[]; } catch(e){ return []; } })();
+  const localKey = localKeys.find(k=>k.id===r.id);
+  // Prioridade: URL do Storage > b64 local > vazio
+  let foto = r.foto || "";
+  if(!foto && localKey?.foto) foto = localKey.foto; // recupera b64 local se Supabase não tem
   return { id:r.id, loc:r.loc, codigo:r.codigo||"", status:r.status||"LIVRE",
     responsavel:r.responsavel||"", dataRet:r.data_ret||"", dataDev:r.data_dev||"",
-    obs:r.obs||"", foto:r.foto||"" };
+    obs:r.obs||"", foto };
 }
 function histToRow(h) {
   return { id:h.id, tipo:h.tipo, loc:h.loc||"", codigo:h.codigo||"",
@@ -830,23 +920,31 @@ function compressImage(file, maxPx=800, quality=0.75) {
 
 // Upload foto para Supabase Storage, retorna URL pública
 async function uploadFoto(file, keyId) {
-  if(!SUPA_URL||!SUPA_KEY) return null;
+  if(!SUPA_URL||!SUPA_KEY) { console.warn("[uploadFoto] Supabase não configurado"); return null; }
   try {
     const blob = await compressImage(file);
-    const path = `${keyId}_${Date.now()}.jpg`;
+    // Nome único por chave — sobrescreve versão anterior
+    const path = `fotos/${keyId}.jpg`;
     const res = await fetch(`${SUPA_URL}/storage/v1/object/chave-fotos/${path}`, {
       method: "POST",
       headers: {
         "apikey": SUPA_KEY,
         "Authorization": `Bearer ${SUPA_KEY}`,
         "Content-Type": "image/jpeg",
-        "Cache-Control": "3600",
+        "Cache-Control": "public, max-age=31536000",
         "x-upsert": "true"
       },
       body: blob
     });
-    if(!res.ok) { console.warn("[Storage upload]", await res.text()); return null; }
-    return `${SUPA_URL}/storage/v1/object/public/chave-fotos/${path}`;
+    if(!res.ok) {
+      const errText = await res.text();
+      console.warn("[Storage upload error]", res.status, errText);
+      return null;
+    }
+    // URL pública com cache-busting para forçar reload após update
+    const publicUrl = `${SUPA_URL}/storage/v1/object/public/chave-fotos/${path}?t=${Date.now()}`;
+    console.log("[uploadFoto] OK →", publicUrl);
+    return publicUrl;
   } catch(e) {
     console.warn("[uploadFoto]", e.message);
     return null;
@@ -1182,19 +1280,27 @@ async function saveEdit(andPDF=false) {
   // Upload nova foto para Supabase Storage se arquivo foi selecionado
   if(ephotoFile) {
     toast("Enviando foto...");
-    if(prev.foto && prev.foto.startsWith("http")) deleteFoto(prev.foto);
-    // Gera base64 para preview imediato (persiste offline)
+    // Gera base64 local PRIMEIRO — garante que nunca perde a foto
     const localB64 = await new Promise(res => {
       const reader = new FileReader();
-      reader.onload = e => res(e.target.result);
+      reader.onload = ev => res(ev.target.result);
       reader.readAsDataURL(ephotoFile);
     });
-    ephoto = localB64; // usa base64 enquanto faz upload
+    ephoto = localB64;
+    keys[eidx].foto = localB64; // salva b64 imediatamente no estado local
+    saveAll(); // persiste no localStorage agora, antes do upload
+    // Tenta upload para Storage
     const uploadedUrl = await uploadFoto(ephotoFile, keys[eidx].id);
     if(uploadedUrl) {
-      ephoto = uploadedUrl; // substitui pela URL do Storage
+      ephoto = uploadedUrl;
+      keys[eidx].foto = uploadedUrl; // atualiza para URL do Storage
+      saveAll(); // persiste a URL no localStorage
+      syncKey(keys[eidx]); // sincroniza URL com Supabase
+      console.log("[Foto] Upload OK →", uploadedUrl);
     } else {
-      toast("Foto salva localmente (sem conexão ao servidor)");
+      // Mantém base64 local — foto não se perde
+      console.warn("[Foto] Upload falhou — mantendo base64 local");
+      toast("Foto salva localmente");
     }
     ephotoFile = null;
   }
