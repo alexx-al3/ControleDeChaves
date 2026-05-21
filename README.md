@@ -298,7 +298,7 @@ Redeploy
 | Cadastro    | cadastro    |
 | ADM         | adm         |
 | Corretor    | corretor    |
-| vistoriador | vistoriador |
+| vistoria    | vistoria    |
 
 > ⚠️ Configure suas próprias credenciais diretamente no banco de dados.
 
