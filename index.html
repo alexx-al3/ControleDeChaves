@@ -990,6 +990,9 @@ const IP=`<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="cu
 // ══════════════════════════════════════════
 // LOGIN / LOGOUT
 // ══════════════════════════════════════════
+  async function preloadUsers() {
+  await loadFromSupabase();
+}
 function doLogin() {
   const u = document.getElementById("lu").value.trim();
   const p = document.getElementById("lp").value;
