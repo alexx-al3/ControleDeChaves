@@ -990,21 +990,44 @@ const IP=`<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="cu
 // ══════════════════════════════════════════
 // LOGIN / LOGOUT
 // ══════════════════════════════════════════
-  async function preloadUsers() {
-  await loadFromSupabase();
-}
-function doLogin() {
+ async function doLogin() {
+
+  // sincroniza usuários do Supabase
+  await preloadUsers();
+
   const u = document.getElementById("lu").value.trim();
   const p = document.getElementById("lp").value;
-  const found = users.find(x => x.user === u && x.pass === p);
+
+  const found = users.find(
+    x => x.user === u && x.pass === p
+  );
+
   if(found) {
-    session = { id:found.id, name:found.name, user:found.user, role:found.role };
-    sessionStorage.setItem(SK.ss, JSON.stringify(session));
-    document.getElementById("lerr").classList.remove("show");
+
+    session = {
+      id: found.id,
+      name: found.name,
+      user: found.user,
+      role: found.role
+    };
+
+    sessionStorage.setItem(
+      SK.ss,
+      JSON.stringify(session)
+    );
+
+    document.getElementById("lerr")
+      .classList.remove("show");
+
     initApp();
+
   } else {
-    document.getElementById("lerr").classList.add("show");
+
+    document.getElementById("lerr")
+      .classList.add("show");
+
     document.getElementById("lp").value = "";
+
   }
 }
 function doLogout() {
