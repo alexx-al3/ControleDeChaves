@@ -346,6 +346,13 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
 .btn-retirar:disabled,.btn-devolver:disabled{opacity:.35;cursor:not-allowed}
 /* Vistoria screen */
 .vis-body{padding:14px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+/* Chaves no protocolo */
+.proto-key-list{display:flex;flex-direction:column;gap:5px;margin-top:4px}
+.proto-key-item{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:8px 11px;display:flex;align-items:center;justify-content:space-between}
+.proto-key-loc{font-family:var(--m);font-size:13px;font-weight:600;color:var(--nv)}
+.proto-key-remove{background:none;border:none;cursor:pointer;color:var(--tx3);font-size:18px;line-height:1;padding:0 0 0 8px}
+.proto-add-btn{padding:7px 12px;background:var(--s2);border:1px solid var(--bd);border-radius:8px;font-family:var(--f);font-size:12.5px;font-weight:500;cursor:pointer;color:var(--tx2);display:flex;align-items:center;gap:5px;width:100%;justify-content:center}
+.proto-add-btn svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 /* Etiquetas */
 .etq-preview{background:#fff;border:1.5px solid var(--bd);border-radius:8px;padding:10px;display:flex;gap:10px;align-items:flex-start}
 .etq-preview-info{flex:1;min-width:0}
@@ -631,6 +638,16 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
     <div class="shdl"></div>
     <div class="shhd"><h2 id="mp-t">Protocolo de Saída</h2><button class="shcl" onclick="closeSheet('mp')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
     <div class="shbd">
+      <!-- CHAVES SELECIONADAS -->
+      <div class="fld">
+        <label>Chaves do protocolo</label>
+        <div class="proto-key-list" id="proto-key-list"></div>
+        <div class="sw" style="margin-top:6px">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" id="proto-search" placeholder="Adicionar outra chave..." oninput="protoSearch()" autocomplete="off">
+        </div>
+        <div id="proto-results" style="display:none;background:var(--s);border:1px solid var(--bd);border-radius:8px;max-height:120px;overflow-y:auto;margin-top:2px"></div>
+      </div>
       <div class="fld"><label>Destinatário</label>
         <div class="tgrid">
           <button class="tbtn sel" data-t="INQUILINO" onclick="selT(this)"><span class="tico">🏠</span>Inquilino</button>
@@ -822,32 +839,14 @@ async function loadFromSupabase() {
       localStorage.setItem(SK.h, JSON.stringify(hist));
     }
     // Users
-    const uRows = await sbFetch(
-  "users",
-  "GET",
-  null,
-  "?select=*"
-);
-
-if(uRows && uRows.length > 0) {
-
-  users = uRows.map(rowToUser);
-
-  localStorage.setItem(
-    SK.u,
-    JSON.stringify(users)
-  );
-
-} else {
-
-  // fallback local
-  const localUsers = localStorage.getItem(SK.u);
-
-  if(localUsers) {
-    users = JSON.parse(localUsers);
-  }
-
-}
+    const uRows = await sbFetch("users","GET",null,"?select=*");
+    if(uRows&&uRows.length) {
+      users = uRows.map(rowToUser);
+      localStorage.setItem(SK.u, JSON.stringify(users));
+    } else if(uRows&&uRows.length===0) {
+      // First time: push default users
+      for(const u of users) await sbFetch("users","POST",[userToRow(u)]);
+    }
   } catch(e) {
     console.warn("[Supabase load]", e.message);
   }
@@ -1008,41 +1007,31 @@ const IP=`<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="cu
 // ══════════════════════════════════════════
 // LOGIN / LOGOUT
 // ══════════════════════════════════════════
- function doLogin() {
-
+async function doLogin() {
   const u = document.getElementById("lu").value.trim();
   const p = document.getElementById("lp").value;
-
-  const found = users.find(
-    x => x.user === u && x.pass === p
-  );
-
+  const loginBtn = document.querySelector(".lbtn");
+  if(loginBtn){ loginBtn.textContent="Verificando..."; loginBtn.disabled=true; }
+  try {
+    // Sempre busca users frescos do Supabase antes de autenticar
+    if(SUPA_URL && SUPA_KEY) {
+      const uRows = await sbFetch("users","GET",null,"?select=*");
+      if(uRows && uRows.length) {
+        users = uRows.map(rowToUser);
+        localStorage.setItem(SK.u, JSON.stringify(users));
+      }
+    }
+  } catch(e) { console.warn("[Login] Supabase offline, usando cache local"); }
+  const found = users.find(x => x.user === u && x.pass === p);
+  if(loginBtn){ loginBtn.textContent="Entrar"; loginBtn.disabled=false; }
   if(found) {
-
-    session = {
-      id: found.id,
-      name: found.name,
-      user: found.user,
-      role: found.role
-    };
-
-    sessionStorage.setItem(
-      SK.ss,
-      JSON.stringify(session)
-    );
-
-    document.getElementById("lerr")
-      .classList.remove("show");
-
+    session = { id:found.id, name:found.name, user:found.user, role:found.role };
+    sessionStorage.setItem(SK.ss, JSON.stringify(session));
+    document.getElementById("lerr").classList.remove("show");
     initApp();
-
   } else {
-
-    document.getElementById("lerr")
-      .classList.add("show");
-
+    document.getElementById("lerr").classList.add("show");
     document.getElementById("lp").value = "";
-
   }
 }
 function doLogout() {
@@ -1080,6 +1069,8 @@ async function initApp() {
   renderList();
   if(can("viewAdmin")) { renderGer(); renderGHist(); }
   if(can("manageUsers")) renderUsers();
+  // Verificar chaves vencidas (uma vez por dia)
+  setTimeout(checkOverdueKeys, 3000);
 }
 
 // ══════════════════════════════════════════
@@ -1447,7 +1438,7 @@ function renderGer() {
 }
 
 // HIST GERAL — lista chaves + histórico individual
-const HIST_EXCLUDE=["EMAIL","CRIAÇÃO"];
+const HIST_EXCLUDE=["EMAIL","CRIAÇÃO","PDF"];
 function isEmptyEdit(h){ return h.tipo==="EDIÇÃO" && (!h.changes||h.changes.length===0); }
 
 // Filtro de status na aba histórico (chips)
@@ -1578,7 +1569,7 @@ function renderUsers(){
     </div>`;
   }).join("");
 }
-function addUser(){
+async function addUser(){
   const n=(document.getElementById("un").value||"").trim();
   const u=(document.getElementById("uu").value||"").trim().toLowerCase();
   const p=(document.getElementById("up").value||"").trim();
@@ -1586,8 +1577,17 @@ function addUser(){
   if(!n||!u||!p){toast("Preencha todos os campos",true);return;}
   if(users.find(x=>x.user===u)){toast("Nome de usuário já existe",true);return;}
   const newU={id:"u_"+Date.now(),name:n,user:u,pass:p,role:r};
-  users.push(newU); syncUser(newU);
-  saveAll();renderUsers();
+  users.push(newU);
+  saveAll(); renderUsers();
+  // Sincroniza imediatamente e aguarda confirmação
+  try {
+    const res = await sbFetch("users","POST",[userToRow(newU)]);
+    if(res) { toast("Usuário criado e sincronizado!"); }
+    else { toast("Usuário criado localmente (sincronizar depois)"); }
+  } catch(e) {
+    syncUser(newU); // tenta async se falhar o await
+    toast("Usuário adicionado!");
+  }
   document.getElementById("un").value="";document.getElementById("uu").value="";document.getElementById("up").value="";
   toast("Usuário adicionado!");
 }
@@ -1608,7 +1608,8 @@ function saveUser(){
   const np=document.getElementById("eu-p").value.trim();
   if(np) u.pass=np;
   u.role=document.getElementById("eu-r").value;
-  syncUser(users[editUserIdx]); saveAll();renderUsers();closeSheet("meu");toast("Usuário atualizado!");
+  saveAll(); renderUsers(); closeSheet("meu");
+  sbFetch("users","POST",[userToRow(users[editUserIdx])]).then(()=>toast("Usuário atualizado!")).catch(()=>toast("Usuário atualizado localmente"));
 }
 let delUserIdx=null;
 function confirmDelUser(idx){
@@ -1619,7 +1620,9 @@ function confirmDelUser(idx){
 }
 function doDeleteUser(){
   if(delUserIdx===null)return;
-  removeUser(users[delUserIdx].id); users.splice(delUserIdx,1);saveAll();renderUsers();closeSheet("mc");toast("Usuário excluído");delUserIdx=null;
+  const delId=users[delUserIdx].id;
+  users.splice(delUserIdx,1); saveAll(); renderUsers(); closeSheet("mc"); toast("Usuário excluído"); delUserIdx=null;
+  sbFetch("users","DELETE",null,`?id=eq.${delId}`).catch(()=>{});
 }
 
 // DELETE KEY
@@ -1655,24 +1658,73 @@ function getSigDataURL(){return sigHasSig?document.getElementById("sig-canvas").
 // ══════════════════════════════════════════
 // PDF
 // ══════════════════════════════════════════
-let pidx=null,pTipo="INQUILINO",pSaida="TEMPORÁRIA";
+let pidx=null, pTipo="INQUILINO", pSaida="TEMPORÁRIA";
+let pKeys=[]; // lista de índices de chaves no protocolo
+
 function openPDF(idx){
-  pidx=idx;const k=keys[idx];
-  document.getElementById("mp-t").textContent=`Comprovante — ${k.loc}`;
+  pKeys=[idx]; // começa com a chave atual
+  const k=keys[idx];
+  document.getElementById("mp-t").textContent="Protocolo de Saída";
   document.getElementById("pnome").value=k.responsavel||"";
   document.getElementById("pobs").value=k.obs||"";
   document.getElementById("pcpf").value="";
-  pTipo="INQUILINO";pSaida="TEMPORÁRIA";
+  document.getElementById("proto-search").value="";
+  document.getElementById("proto-results").style.display="none";
+  pTipo="INQUILINO"; pSaida="TEMPORÁRIA";
   document.querySelectorAll(".tbtn").forEach(b=>b.classList.toggle("sel",b.dataset.t==="INQUILINO"));
   document.querySelectorAll(".sbtn").forEach(b=>b.classList.toggle("sel",b.dataset.s==="TEMPORÁRIA"));
   document.getElementById("dw").classList.add("show");
   document.getElementById("shint").textContent="Chave retorna após o prazo.";
   document.getElementById("pdias").value=7;
-  // Signature — only ADM/Cadastro
   const sw=document.getElementById("sig-wrap");
   sw.classList.toggle("show",can("signature"));
   if(can("signature")){ clearSig(); setTimeout(initSig,350); }
+  renderProtoKeys();
   openSheet("mp");
+}
+
+function renderProtoKeys(){
+  const el=document.getElementById("proto-key-list");
+  if(!el) return;
+  if(!pKeys.length){ el.innerHTML=`<p style="font-size:12px;color:var(--tx3)">Nenhuma chave selecionada.</p>`; return; }
+  el.innerHTML=pKeys.map((ki,i)=>{
+    const k=keys[ki];
+    return`<div class="proto-key-item">
+      <div><span class="proto-key-loc">${k.loc}</span>${k.codigo?`<span style="font-size:11px;color:var(--tx3);margin-left:6px">${k.codigo}</span>`:""}</div>
+      ${pKeys.length>1?`<button class="proto-key-remove" onclick="protoRemoveKey(${i})">×</button>`:""}
+    </div>`;
+  }).join("");
+}
+
+function protoRemoveKey(i){
+  pKeys.splice(i,1);
+  renderProtoKeys();
+}
+
+function protoSearch(){
+  const q=(document.getElementById("proto-search").value||"").trim().toLowerCase();
+  const res=document.getElementById("proto-results");
+  if(!q){ res.style.display="none"; return; }
+  const filtered=keys.filter((k,i)=>
+    !pKeys.includes(i) &&
+    (k.loc.toLowerCase().includes(q)||k.codigo.toLowerCase().includes(q))
+  ).slice(0,6);
+  if(!filtered.length){ res.style.display="none"; return; }
+  res.style.display="block";
+  res.innerHTML=filtered.map(k=>{
+    const idx=keys.indexOf(k);
+    return`<div onclick="protoAddKey(${idx})" style="padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--bd);font-size:13px;display:flex;justify-content:space-between" onmouseover="this.style.background='var(--s2)'" onmouseout="this.style.background=''">
+      <span style="font-family:var(--m);font-weight:600">${k.loc}</span>
+      <span style="font-size:11px;color:var(--tx3)">${k.codigo||bl(k.status)}</span>
+    </div>`;
+  }).join("");
+}
+
+function protoAddKey(idx){
+  if(!pKeys.includes(idx)) pKeys.push(idx);
+  document.getElementById("proto-search").value="";
+  document.getElementById("proto-results").style.display="none";
+  renderProtoKeys();
 }
 function selT(btn){pTipo=btn.dataset.t;document.querySelectorAll(".tbtn").forEach(b=>b.classList.remove("sel"));btn.classList.add("sel");}
 function selS(btn){
@@ -1682,23 +1734,30 @@ function selS(btn){
   document.getElementById("shint").textContent=h[pSaida]||"";
 }
 async function gerarPDF(){
-  if(pidx===null)return;
-  const k=keys[pidx];
+  if(!pKeys||!pKeys.length){toast("Selecione ao menos uma chave",true);return;}
   const nome=document.getElementById("pnome").value.trim();
   const cpf=document.getElementById("pcpf").value.trim();
   const dias=document.getElementById("pdias")?.value;
   const obs=document.getElementById("pobs").value.trim();
-  if(!nome){toast("Digite o nome do recebedor",true);return;}
-  const prevK={...k};
-  // Update key
-  k.responsavel=nome; k.status="INDISPONÍVEL";
-  if(!k.dataRet) k.dataRet=new Date().toISOString().slice(0,10);
-  if(pSaida==="TEMPORÁRIA"&&dias){const dev=new Date();dev.setDate(dev.getDate()+parseInt(dias));k.dataDev=dev.toISOString().slice(0,10);}
-  else k.dataDev="";
-  // Definitiva / Novo locatário → LIVRE after PDF
+  if(!nome){toast("Digite o nome",true);return;}
   const isDefinitive = pSaida==="DEFINITIVA"||pSaida==="NOVO LOCATÁRIO";
-  addHist("SAÍDA",k,{destinatarioTipo:pTipo,saida_tipo:pSaida,dias:pSaida==="TEMPORÁRIA"?dias:null,usuario:session?.name,perfil:session?.role});
-  saveAll(); syncKey(keys[pidx]); renderList(); renderGer(); renderGHist();
+  const hoje_iso = new Date().toISOString().slice(0,10);
+  // Processar TODAS as chaves selecionadas
+  const processedKeys=[];
+  for(const ki of pKeys){
+    const k=keys[ki]; if(!k) continue;
+    k.responsavel=nome; k.status="INDISPONÍVEL";
+    if(!k.dataRet) k.dataRet=hoje_iso;
+    if(pSaida==="TEMPORÁRIA"&&dias){const dev=new Date();dev.setDate(dev.getDate()+parseInt(dias));k.dataDev=dev.toISOString().slice(0,10);}
+    else k.dataDev="";
+    addHist("SAÍDA",k,{destinatarioTipo:pTipo,saida_tipo:pSaida,dias:pSaida==="TEMPORÁRIA"?dias:null,usuario:session?.name,perfil:session?.role});
+    processedKeys.push({k,ki});
+    syncKey(k);
+  }
+  // referência principal = primeira chave
+  const k=processedKeys[0].k;
+  const pidxRef=pKeys[0];
+  saveAll(); renderList(); renderGer(); renderGHist();
   // Build PDF
   let pdfBase64=null, pdfName=null;
   try{
@@ -1734,17 +1793,21 @@ async function gerarPDF(){
     doc.text(`Emitido em ${hoje} às ${hora} por ${session?.name||"—"} (${session?.role||""})`,40,24);
 
     // ── CHAVE INFO BOX ────────────────────────────────────
+    // Box com todas as chaves do protocolo
+    const allLocs = processedKeys.map(pk=>pk.k.loc+(pk.k.codigo?" ("+pk.k.codigo+")":"")).join("  ·  ");
+    const boxH = processedKeys.length > 2 ? 28 : 22;
     doc.setFillColor(242,242,240);
-    doc.roundedRect(MARGIN,36,PW-MARGIN*2,22,2,2,"F");
+    doc.roundedRect(MARGIN,36,PW-MARGIN*2,boxH,2,2,"F");
     doc.setTextColor(27,46,75);
     doc.setFont("helvetica","bold");
-    doc.setFontSize(20);
-    doc.text(k.loc,MARGIN+6,47);
-    if(k.codigo){
-      doc.setFont("helvetica","normal");
-      doc.setFontSize(9);
-      doc.setTextColor(90,90,86);
-      doc.text(`Código: ${k.codigo}`,MARGIN+6,53);
+    doc.setFontSize(processedKeys.length===1?20:13);
+    if(processedKeys.length===1){
+      doc.text(k.loc,MARGIN+6,47);
+      if(k.codigo){doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(90,90,86);doc.text(`Código: ${k.codigo}`,MARGIN+6,53);}
+    } else {
+      doc.setFontSize(11);
+      const locLines=doc.splitTextToSize(allLocs,PW-MARGIN*2-8);
+      doc.text(locLines,MARGIN+6,44);
     }
 
     // Tipo de saída — badge direito
@@ -1864,14 +1927,30 @@ async function gerarPDF(){
     doc.setFontSize(7.5);
     doc.text("ACRC Imóveis  ·  www.acrcimoveis.com.br  ·  Blumenau / SC",PW/2,PH-FOOTER_H+9,{align:"center"});
 
-    pdfName=`ACRC_${k.loc}_${hoje.replace(/\//g,"-")}.pdf`;
+    const locsStr=processedKeys.map(pk=>pk.k.loc).join("_");
+    pdfName=`ACRC_${locsStr}_${hoje.replace(/\//g,"-")}.pdf`;
     doc.save(pdfName);
     pdfBase64=doc.output("datauristring").split(",")[1];
-    addHist("PDF",k,{pdfName,saida_tipo:pSaida,destinatarioTipo:pTipo});
+    addHist("PDF",k,{pdfName,saida_tipo:pSaida,destinatarioTipo:pTipo,chaves:pKeys.map(ki=>keys[ki]?.loc).join(", ")});
     saveAll();
   }catch(e){console.error(e);toast("Erro ao gerar PDF",true);return;}
   // If definitiva/novo locatario → LIVRE
-  if(isDefinitive){ k.status="LIVRE";k.codigo="";k.responsavel="";k.dataRet="";k.dataDev="";k.obs="";addHist("EDIÇÃO",k,{changes:[{campo:"Status",anterior:"INDISPONÍVEL",novo:"LIVRE"},{campo:"Código",anterior:k.codigo,novo:""}]});saveAll();syncKey(k);renderList(); }
+  if(isDefinitive){
+    for(const {k:dk} of processedKeys){
+      dk.status="LIVRE";dk.codigo="";dk.responsavel="";dk.dataRet="";dk.dataDev="";dk.obs="";
+      // Limpar histórico desta chave — nova vida, novo histórico
+      hist = hist.filter(h => h.loc !== dk.loc);
+      addHist("CRIAÇÃO",dk,{changes:[{campo:"Status",anterior:"INDISPONÍVEL",novo:"LIVRE"}],note:"Histórico limpo — saída definitiva"});
+      syncKey(dk);
+    }
+    // Salvar histórico limpo no Supabase
+    if(SUPA_URL&&SUPA_KEY){
+      for(const {k:dk} of processedKeys){
+        sbFetch("history","DELETE",null,`?loc=eq.${encodeURIComponent(dk.loc)}`).catch(()=>{});
+      }
+    }
+    saveAll();renderList();
+  }
   // Email de notificação (sem anexo — PDF já baixado localmente)
   const emailChanges=[
     {campo:"Status",anterior:bl(prevK.status),novo:"Indisponível"},
@@ -2318,6 +2397,80 @@ function toast(msg,err=false){const el=document.getElementById("toast");document
 load();
 if(session){ initApp(); }
 // else: login screen is shown by default
+
+// ══════════════════════════════════════════
+// ALERTAS DE DEVOLUÇÃO PENDENTE
+// Verifica saídas temporárias vencidas e
+// envia email uma vez por dia ao logar
+// ══════════════════════════════════════════
+async function checkOverdueKeys() {
+  if(!cfg.emailDest && !session) return;
+  const hoje = new Date().toISOString().slice(0,10);
+  const lastCheck = localStorage.getItem("acrc_overdue_check");
+  // Verifica apenas uma vez por dia
+  if(lastCheck === hoje) return;
+  const vencidas = keys.filter(k =>
+    k.status === "INDISPONÍVEL" &&
+    k.dataDev &&
+    k.dataDev < hoje
+  );
+  if(!vencidas.length) {
+    localStorage.setItem("acrc_overdue_check", hoje);
+    return;
+  }
+  // Monta tabela HTML das chaves vencidas
+  const rows = vencidas.map(k => `
+    <tr>
+      <td style="padding:6px 10px;border:1px solid #e4e4e0;font-family:monospace;font-weight:600;color:#1B2E4B">${k.loc}</td>
+      <td style="padding:6px 10px;border:1px solid #e4e4e0">${k.codigo||"—"}</td>
+      <td style="padding:6px 10px;border:1px solid #e4e4e0">${k.responsavel||"—"}</td>
+      <td style="padding:6px 10px;border:1px solid #e4e4e0;color:#a12828;font-weight:600">${fd(k.dataDev)}</td>
+      <td style="padding:6px 10px;border:1px solid #e4e4e0;color:#a12828">
+        ${Math.ceil((new Date(hoje)-new Date(k.dataDev))/(1000*60*60*24))} dia(s) em atraso
+      </td>
+    </tr>`).join("");
+  const htmlBody = `<!DOCTYPE html><html><body style="font-family:'DM Sans',Arial,sans-serif;color:#191917;max-width:600px;margin:0 auto;padding:20px">
+    <div style="background:linear-gradient(135deg,#1B2E4B,#243d61);padding:20px 24px;border-radius:12px 12px 0 0">
+      <h2 style="color:#fff;margin:0;font-size:18px">⚠️ ACRC Imóveis — Chaves com Devolução Pendente</h2>
+      <p style="color:rgba(255,255,255,.7);margin:4px 0 0;font-size:13px">Verificação automática — ${new Date().toLocaleDateString("pt-BR")}</p>
+    </div>
+    <div style="background:#fff;border:1px solid #e4e4e0;border-top:none;padding:20px;border-radius:0 0 12px 12px">
+      <p style="font-size:14px;color:#525250;margin-bottom:16px">
+        As seguintes chaves estão <strong style="color:#a12828">com devolução vencida</strong> e ainda constam como Indisponível no sistema:
+      </p>
+      <table style="width:100%;border-collapse:collapse">
+        <tr style="background:#f5f5f3">
+          <th style="padding:6px 10px;border:1px solid #e4e4e0;font-size:12px;text-align:left">CHAVE</th>
+          <th style="padding:6px 10px;border:1px solid #e4e4e0;font-size:12px;text-align:left">CÓDIGO</th>
+          <th style="padding:6px 10px;border:1px solid #e4e4e0;font-size:12px;text-align:left">RESPONSÁVEL</th>
+          <th style="padding:6px 10px;border:1px solid #e4e4e0;font-size:12px;text-align:left">PRAZO</th>
+          <th style="padding:6px 10px;border:1px solid #e4e4e0;font-size:12px;text-align:left">SITUAÇÃO</th>
+        </tr>
+        ${rows}
+      </table>
+      <p style="font-size:12px;color:#969692;margin-top:16px">
+        Acesse o sistema para regularizar: <a href="https://controledechavesacrc.vercel.app" style="color:#E8651A">controledechavesacrc.vercel.app</a>
+      </p>
+    </div>
+    <p style="font-size:11px;color:#969692;text-align:center;margin-top:12px">ACRC Imóveis · Blumenau/SC · Envio automático diário</p>
+  </body></html>`;
+  try {
+    await fetch("/api/send-email", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        subject: `⚠️ ${vencidas.length} chave(s) com devolução pendente — ${new Date().toLocaleDateString("pt-BR")}`,
+        html: htmlBody,
+        pdfBase64: null,
+        pdfName: null
+      })
+    });
+    console.log(`[Overdue] Email enviado — ${vencidas.length} chave(s) vencida(s)`);
+  } catch(e) {
+    console.warn("[Overdue] Erro ao enviar email:", e.message);
+  }
+  localStorage.setItem("acrc_overdue_check", hoje);
+}
 
 // PWA install prompt
 let deferredPrompt = null;
