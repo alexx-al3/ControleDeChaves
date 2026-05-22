@@ -822,14 +822,32 @@ async function loadFromSupabase() {
       localStorage.setItem(SK.h, JSON.stringify(hist));
     }
     // Users
-    const uRows = await sbFetch("users","GET",null,"?select=*");
-    if(uRows&&uRows.length) {
-      users = uRows.map(rowToUser);
-      localStorage.setItem(SK.u, JSON.stringify(users));
-    } else if(uRows&&uRows.length===0) {
-      // First time: push default users
-      for(const u of users) await sbFetch("users","POST",[userToRow(u)]);
-    }
+    const uRows = await sbFetch(
+  "users",
+  "GET",
+  null,
+  "?select=*"
+);
+
+if(uRows && uRows.length > 0) {
+
+  users = uRows.map(rowToUser);
+
+  localStorage.setItem(
+    SK.u,
+    JSON.stringify(users)
+  );
+
+} else {
+
+  // fallback local
+  const localUsers = localStorage.getItem(SK.u);
+
+  if(localUsers) {
+    users = JSON.parse(localUsers);
+  }
+
+}
   } catch(e) {
     console.warn("[Supabase load]", e.message);
   }
