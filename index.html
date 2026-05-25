@@ -179,7 +179,12 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
 .shcl{background:var(--s2);border:none;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .shcl svg{width:13px;height:13px;stroke:var(--tx2);fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
 .shbd{overflow-y:auto;padding:14px;flex:1;display:flex;flex-direction:column;gap:12px}
-.shft{padding:11px 14px;border-top:1px solid var(--bd);flex-shrink:0;display:flex;gap:8px}
+.shft{padding:11px 14px;border-top:1px solid var(--bd);flex-shrink:0;display:flex;gap:8px;flex-wrap:wrap}
+.shft-main{display:flex;gap:8px;width:100%}
+.shft-sec{display:flex;gap:6px;width:100%}
+.shft-sec .bs{flex:1;padding:10px;font-size:13px}
+.shft-sec .bn2{flex:1;padding:10px;font-size:13px}
+.shft-sec .bp{flex:1;padding:10px;font-size:13px}
 
 /* FORM */
 .fld{display:flex;flex-direction:column;gap:5px}
@@ -1225,27 +1230,21 @@ function openKey(idx) {
       ${k.obs?`<div style="background:var(--s2);border-radius:8px;padding:9px 11px;grid-column:1/-1"><div style="font-size:10.5px;color:var(--tx3);margin-bottom:2px">Observações</div><div style="font-size:13px">${k.obs}</div></div>`:""}
     </div>
     ${histHTML}`;
-  const footBtns = [`<button class="bs" onclick="closeSheet('mk')">Fechar</button>`];
-  // Botões de movimentação rápida — todos os perfis com quickMove
+  // Linha 1 — ação principal (Retirar OU Devolver — destaque total)
+  let mainBtn = "";
   if(can("quickMove")) {
     const isDisp = k.status==="DISPONÍVEL"||k.status==="LIVRE";
     const isIndisp = k.status==="INDISPONÍVEL";
-    if(isDisp) {
-      footBtns.push(`<button class="btn-retirar" onclick="closeSheet('mk');retirarChave(${idx})">
-        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        Retirar
-      </button>`);
-    }
-    if(isIndisp) {
-      footBtns.push(`<button class="btn-devolver" onclick="closeSheet('mk');devolverChave(${idx})">
-        <svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-        Devolver
-      </button>`);
-    }
+    if(isDisp) mainBtn = `<button class="btn-retirar" style="width:100%;font-size:15px;padding:13px" onclick="closeSheet('mk');retirarChave(${idx})"><svg viewBox="0 0 24 24" width="17" height="17"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Retirar Chave</button>`;
+    if(isIndisp) mainBtn = `<button class="btn-devolver" style="width:100%;font-size:15px;padding:13px" onclick="closeSheet('mk');devolverChave(${idx})"><svg viewBox="0 0 24 24" width="17" height="17"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>Devolver Chave</button>`;
   }
-  if(can("genPDF")) footBtns.push(`<button class="bn2" onclick="closeSheet('mk');openPDF(${idx})">${IP} Protocolo</button>`);
-  if(can("editKey")) footBtns.push(`<button class="bp" onclick="closeSheet('mk');openEdit(${idx})">${IE} Editar</button>`);
-  document.getElementById("mk-f").innerHTML = footBtns.join("");
+  // Linha 2 — ações secundárias
+  const secBtns = [`<button class="bs" style="flex:1;padding:10px;font-size:13px" onclick="closeSheet('mk')">Fechar</button>`];
+  if(can("genPDF")) secBtns.push(`<button class="bn2" style="flex:1;padding:10px;font-size:13px" onclick="closeSheet('mk');openPDF(${idx})">${IP} Protocolo</button>`);
+  if(can("editKey")) secBtns.push(`<button class="bp" style="flex:1;padding:10px;font-size:13px" onclick="closeSheet('mk');openEdit(${idx})">${IE} Editar</button>`);
+  document.getElementById("mk-f").innerHTML =
+    (mainBtn ? `<div style="width:100%">${mainBtn}</div>` : "") +
+    `<div style="display:flex;gap:8px;width:100%">${secBtns.join("")}</div>`;
   openSheet("mk");
 }
 
@@ -1608,16 +1607,54 @@ function changePwd(){
 // USERS (Cadastro only)
 // ══════════════════════════════════════════
 const ROLE_NAMES={cadastro:"Cadastro",adm:"ADM",corretor:"Corretor",vistoria:"Vistoria"};
+const ROLE_ORDER=["cadastro","adm","corretor","vistoria"];
+const ROLE_DESC={cadastro:"Acesso total",adm:"Gerenciamento operacional",corretor:"Movimentações rápidas",vistoria:"Vistoria e comprovantes"};
+
 function renderUsers(){
   const el=document.getElementById("users-list");
-  el.innerHTML=users.map((u,idx)=>{
-    const initials=u.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
-    return`<div class="user-card">
-      <div class="user-avatar ua-${u.role}">${initials}</div>
-      <div class="user-info"><div class="user-name">${u.name}<span class="role-badge rb-${u.role}">${ROLE_NAMES[u.role]||u.role}</span></div><div class="user-role">@${u.user}</div></div>
-      <div class="row-acts"><button class="ibtn" onclick="openEditUser(${idx})" title="Editar">${IE}</button>${u.id!=="u_cadastro"?`<button class="ibtn dng" onclick="confirmDelUser(${idx})" title="Excluir">${ID}</button>`:""}</div>
+  if(!el) return;
+  // Agrupar por perfil na ordem definida
+  const byRole={};
+  ROLE_ORDER.forEach(r=>byRole[r]=[]);
+  users.forEach((u,idx)=>{ const r=byRole[u.role]; if(r) r.push({u,idx}); });
+  const UGK="acrc_usr_grp"; let ugs={};
+  try{ ugs=JSON.parse(localStorage.getItem(UGK))||{}; }catch(e){}
+  el.innerHTML=ROLE_ORDER.filter(r=>byRole[r].length>0).map(role=>{
+    const isOpen=ugs[role]!==false;
+    const members=byRole[role];
+    const rows=members.map(({u,idx})=>{
+      const initials=u.name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase();
+      return`<div class="user-card" style="border-bottom:1px solid var(--bd);border-radius:0;padding:10px 13px">
+        <div class="user-avatar ua-${u.role}">${initials}</div>
+        <div class="user-info"><div class="user-name">${u.name}</div><div class="user-role">@${u.user}</div></div>
+        <div class="row-acts"><button class="ibtn" onclick="openEditUser(${idx})">${IE}</button>${u.id!=="u_cadastro"?`<button class="ibtn dng" onclick="confirmDelUser(${idx})">${ID}</button>`:""}</div>
+      </div>`;
+    }).join("");
+    return`<div class="grp-header" style="margin-top:8px" onclick="toggleUsrGrp('${role}')">
+      <div>
+        <span class="grp-title">${ROLE_NAMES[role]||role}</span>
+        <div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:1px">${ROLE_DESC[role]||""}</div>
+      </div>
+      <div class="grp-meta">
+        <span style="color:rgba(255,255,255,.6);font-size:11px">${members.length} usuário${members.length>1?"s":""}</span>
+        <svg class="grp-chevron${isOpen?" open":""}" id="uchev-${role}" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+    <div class="grp-body${isOpen?" open":""}" id="ugrpb-${role}">
+      <div class="acard" style="margin-bottom:4px;border-radius:0 0 var(--r) var(--r)">${rows}</div>
     </div>`;
   }).join("");
+}
+
+function toggleUsrGrp(role){
+  const body=document.getElementById("ugrpb-"+role);
+  const chev=document.getElementById("uchev-"+role);
+  if(!body)return;
+  const isOpen=body.classList.toggle("open");
+  if(chev)chev.classList.toggle("open",isOpen);
+  const UGK="acrc_usr_grp"; let s={};
+  try{ s=JSON.parse(localStorage.getItem(UGK))||{}; }catch(e){}
+  s[role]=isOpen; localStorage.setItem(UGK,JSON.stringify(s));
 }
 async function addUser(){
   const n=(document.getElementById("un").value||"").trim();
