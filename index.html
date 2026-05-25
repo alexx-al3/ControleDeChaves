@@ -258,6 +258,16 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
 
 ::-webkit-scrollbar{width:3px}
 ::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+/* Grupos colapsáveis no gerenciar */
+.grp-header{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:var(--nv);border-radius:var(--r);cursor:pointer;user-select:none;margin-bottom:4px}
+.grp-header:active{opacity:.85}
+.grp-title{font-size:13px;font-weight:600;color:#fff;font-family:var(--m)}
+.grp-meta{font-size:11px;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:8px}
+.grp-badge{background:var(--or);color:#fff;font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px}
+.grp-chevron{width:14px;height:14px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;transition:transform .2s}
+.grp-chevron.open{transform:rotate(90deg)}
+.grp-body{display:none;margin-bottom:10px}
+.grp-body.open{display:block}
 
 /* ── Feedback visual de botões ───────────────────────── */
 @keyframes btnPress{0%{transform:scale(1)}40%{transform:scale(.95)}100%{transform:scale(1)}}
@@ -742,11 +752,12 @@ async function sbFetch(table, method="GET", body=null, query="") {
 // key obj → supabase row
 // foto: envia URL se disponível; base64 curto (<50KB) vai como fallback
 function keyToRow(k) {
+  // Aceita URL do Storage ou base64 comprimido (até 200KB)
   let fotoVal = "";
   if(k.foto && k.foto.startsWith("http")) {
-    fotoVal = k.foto; // URL do Storage — ideal
-  } else if(k.foto && k.foto.startsWith("data:") && k.foto.length < 51200) {
-    fotoVal = k.foto; // base64 pequeno (<50KB) — fallback offline
+    fotoVal = k.foto; // URL do Storage
+  } else if(k.foto && k.foto.startsWith("data:") && k.foto.length < 204800) {
+    fotoVal = k.foto; // base64 comprimido — garantia de persistência
   }
   return { id:k.id, loc:k.loc, codigo:k.codigo||"", status:k.status||"LIVRE",
     responsavel:k.responsavel||"", data_ret:k.dataRet||"", data_dev:k.dataDev||"",
@@ -826,10 +837,19 @@ async function loadFromSupabase() {
     // Keys
     const kRows = await sbFetch("keys","GET",null,"?select=*&order=loc.asc");
     if(kRows&&kRows.length) {
-      keys = kRows.map(rowToKey);
+      // Preservar fotos locais se Supabase não tiver URL ainda
+      const localCache = (() => { try { return JSON.parse(localStorage.getItem(SK.k))||[]; } catch(e){ return []; } })();
+      keys = kRows.map(r => {
+        const mapped = rowToKey(r);
+        // Se Supabase não tem foto mas localStorage tem, preservar local
+        if(!mapped.foto) {
+          const local = localCache.find(lk => lk.id === r.id);
+          if(local?.foto) mapped.foto = local.foto;
+        }
+        return mapped;
+      });
       localStorage.setItem(SK.k, JSON.stringify(keys));
     } else if(kRows&&kRows.length===0) {
-      // First time: push default keys to Supabase
       await syncKeysToSupabase(keys);
     }
     // History (last 500)
@@ -935,12 +955,30 @@ function compressImage(file, maxPx=800, quality=0.75) {
   });
 }
 
-// Upload foto para Supabase Storage, retorna URL pública
+// Upload foto — estratégia dupla: b64 no banco + URL no Storage
 async function uploadFoto(file, keyId) {
-  if(!SUPA_URL||!SUPA_KEY) { console.warn("[uploadFoto] Supabase não configurado"); return null; }
+  if(!SUPA_URL||!SUPA_KEY) return null;
   try {
-    const blob = await compressImage(file);
-    // Nome único por chave — sobrescreve versão anterior
+    // Comprime para máx 600px, qualidade 0.65 → garante < 100KB para o banco
+    const blob = await compressImage(file, 600, 0.65);
+    // Converte blob comprimido para base64
+    const b64 = await new Promise(res2 => {
+      const r = new FileReader();
+      r.onload = e => res2(e.target.result);
+      r.readAsDataURL(blob);
+    });
+    // Salva base64 direto no banco — SEMPRE funciona independente do Storage
+    if(keyId && keys) {
+      const ki = keys.findIndex(k => k.id === keyId);
+      if(ki >= 0) {
+        keys[ki].foto = b64;
+        saveAll();
+        // Sincroniza b64 com Supabase imediatamente
+        await sbFetch("keys","POST",[keyToRow(keys[ki])]);
+        console.log("[Foto] B64 salvo no banco OK");
+      }
+    }
+    // Tenta upload no Storage em paralelo (URL mais eficiente)
     const path = `fotos/${keyId}.jpg`;
     const res = await fetch(`${SUPA_URL}/storage/v1/object/chave-fotos/${path}`, {
       method: "POST",
@@ -948,20 +986,18 @@ async function uploadFoto(file, keyId) {
         "apikey": SUPA_KEY,
         "Authorization": `Bearer ${SUPA_KEY}`,
         "Content-Type": "image/jpeg",
-        "Cache-Control": "public, max-age=31536000",
         "x-upsert": "true"
       },
       body: blob
     });
-    if(!res.ok) {
-      const errText = await res.text();
-      console.warn("[Storage upload error]", res.status, errText);
-      return null;
+    if(res.ok) {
+      const publicUrl = `${SUPA_URL}/storage/v1/object/public/chave-fotos/${path}?v=${Date.now()}`;
+      console.log("[Foto] Storage URL OK →", publicUrl);
+      return publicUrl; // substitui b64 pela URL
     }
-    // URL pública com cache-busting para forçar reload após update
-    const publicUrl = `${SUPA_URL}/storage/v1/object/public/chave-fotos/${path}?t=${Date.now()}`;
-    console.log("[uploadFoto] OK →", publicUrl);
-    return publicUrl;
+    // Storage falhou mas b64 já está no banco — foto segura
+    console.warn("[Foto] Storage falhou, usando b64 do banco");
+    return b64; // retorna b64 como URL — será exibido normalmente
   } catch(e) {
     console.warn("[uploadFoto]", e.message);
     return null;
@@ -1277,12 +1313,16 @@ let ephotoFile = null; // raw File object for upload
 
 function handlePhoto(e) {
   const file=e.target.files[0]; if(!file)return;
-  ephotoFile = file; // store for upload in saveEdit
-  // Show preview using object URL (fast, no base64 needed in UI)
+  ephotoFile = file;
+  // Preview imediato via object URL
   const previewUrl = URL.createObjectURL(file);
   const pp=document.getElementById("pp"),pua=document.getElementById("pua"),prb=document.getElementById("prb");
   pp.src=previewUrl; pp.classList.add("show");
   pua.style.display="none"; prb.classList.add("show");
+  // Pré-gera base64 em background para ter disponível ao salvar
+  const reader = new FileReader();
+  reader.onload = ev => { ephoto = ev.target.result; };
+  reader.readAsDataURL(file);
 }
 function removePhoto() {
   // Delete old photo from Storage if it was a URL
@@ -1310,33 +1350,14 @@ async function saveEdit(andPDF=false) {
   }
 
   // Upload nova foto para Supabase Storage se arquivo foi selecionado
+  // uploadFoto já salva b64 no banco Supabase internamente
   if(ephotoFile) {
-    toast("Enviando foto...");
-    // Gera base64 local PRIMEIRO — garante que nunca perde a foto
-    const localB64 = await new Promise(res => {
-      const reader = new FileReader();
-      reader.onload = ev => res(ev.target.result);
-      reader.readAsDataURL(ephotoFile);
-    });
-    ephoto = localB64;
-    keys[eidx].foto = localB64; // salva b64 imediatamente no estado local
-    saveAll(); // persiste no localStorage agora, antes do upload
-    // Tenta upload para Storage
-    const uploadedUrl = await uploadFoto(ephotoFile, keys[eidx].id);
-    if(uploadedUrl) {
-      ephoto = uploadedUrl;
-      keys[eidx].foto = uploadedUrl; // atualiza para URL do Storage
-      saveAll(); // persiste a URL no localStorage
-      syncKey(keys[eidx]); // sincroniza URL com Supabase
-      console.log("[Foto] Upload OK →", uploadedUrl);
-    } else {
-      // Mantém base64 local — foto não se perde
-      console.warn("[Foto] Upload falhou — mantendo base64 local");
-      toast("Foto salva localmente");
-    }
+    toast("Salvando foto...");
+    const resultUrl = await uploadFoto(ephotoFile, keys[eidx].id);
+    if(resultUrl) { ephoto = resultUrl; }
     ephotoFile = null;
   }
-
+  // Aplica foto ao registro (seja URL do Storage ou b64)
   keys[eidx].foto = ephoto;
   keys[eidx].codigo = newCodigo;
   keys[eidx].status = newStatus;
@@ -1429,12 +1450,41 @@ function renderGer() {
   const filtered=keys.filter(k=>!q||k.loc.toLowerCase().includes(q)||k.codigo.toLowerCase().includes(q));
   document.getElementById("gcnt").textContent=`(${keys.length})`;
   const el=document.getElementById("glist");
+  if(!el) return;
   if(!filtered.length){el.innerHTML=`<div style="padding:16px;text-align:center;font-size:13px;color:var(--tx3)">Nenhuma chave.</div>`;return;}
-  el.innerHTML=filtered.map(k=>{
+  const mkRow=k=>{
     const idx=keys.indexOf(k),c=bc(k.status);
     const thumb=k.foto?`<img class="ath" src="${k.foto}" alt="">`:`<div class="aico">${IK}</div>`;
-    return`<div class="arow">${thumb}<div class="arow-m"><div class="arow-l">${k.loc}</div><div class="arow-s"><span class="bdg b${c}" style="font-size:10px;padding:1px 6px">${bl(k.status)}</span>${k.codigo?" "+k.codigo:""}</div></div><div class="row-acts">${can("editKey")?`<button class="ibtn" onclick="openEdit(${idx})" title="Editar">${IE}</button>`:""}<button class="ibtn" onclick="openRename(${idx})" title="Renomear">${IR}</button>${can("deleteKey")?`<button class="ibtn dng" onclick="confirmDel(${idx})" title="Excluir">${ID}</button>`:""}</div></div>`;
+    return`<div class="arow" style="border-bottom:1px solid var(--bd)">${thumb}<div class="arow-m"><div class="arow-l">${k.loc}</div><div class="arow-s"><span class="bdg b${c}" style="font-size:10px;padding:1px 6px">${bl(k.status)}</span>${k.codigo?" "+k.codigo:""}</div></div><div class="row-acts">${can("editKey")?`<button class="ibtn" onclick="openEdit(${idx})">${IE}</button>`:""}<button class="ibtn" onclick="openRename(${idx})">${IR}</button>${can("deleteKey")?`<button class="ibtn dng" onclick="confirmDel(${idx})">${ID}</button>`:""}</div></div>`;
+  };
+  // Se busca ativa → lista plana
+  if(q){ el.innerHTML=`<div class="acard">${filtered.map(mkRow).join("")}</div>`; return; }
+  // Agrupar por prefixo de letras
+  const GK="acrc_grp_st"; let gs={};
+  try{ gs=JSON.parse(localStorage.getItem(GK))||{}; }catch(e){}
+  const groups={};
+  filtered.forEach(k=>{ const m=k.loc.match(/^([A-Za-z]+)/); const g=m?m[1].toUpperCase():"OUTROS"; if(!groups[g])groups[g]=[]; groups[g].push(k); });
+  el.innerHTML=Object.keys(groups).sort().map(grp=>{
+    const ks=groups[grp];
+    const indisp=ks.filter(k=>k.status==="INDISPONÍVEL").length;
+    const isOpen=gs[grp]!==false;
+    return`<div class="grp-header" onclick="toggleGrp('${grp}')">
+      <span class="grp-title">${grp}</span>
+      <div class="grp-meta">${indisp?`<span class="grp-badge">${indisp} out</span>`:""}<span style="color:rgba(255,255,255,.6);font-size:11px">${ks.length} chave${ks.length>1?"s":""}</span><svg class="grp-chevron${isOpen?" open":""}" id="chev-${grp}" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+    <div class="grp-body${isOpen?" open":""}" id="grpb-${grp}"><div class="acard" style="margin-bottom:6px">${ks.map(mkRow).join("")}</div></div>`;
   }).join("");
+}
+
+function toggleGrp(grp){
+  const body=document.getElementById("grpb-"+grp);
+  const chev=document.getElementById("chev-"+grp);
+  if(!body)return;
+  const isOpen=body.classList.toggle("open");
+  if(chev)chev.classList.toggle("open",isOpen);
+  const GK="acrc_grp_st"; let s={};
+  try{ s=JSON.parse(localStorage.getItem(GK))||{}; }catch(e){}
+  s[grp]=isOpen; localStorage.setItem(GK,JSON.stringify(s));
 }
 
 // HIST GERAL — lista chaves + histórico individual
