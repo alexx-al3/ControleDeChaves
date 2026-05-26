@@ -250,6 +250,11 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
 
 /* CHANGE PWD */
 .cpform{background:var(--s);border:1px solid var(--bd);border-radius:var(--rl);padding:14px;display:flex;flex-direction:column;gap:10px}
+/* Campo senha com olhinho */
+.pwd-wrap{position:relative}
+.pwd-wrap input{padding-right:38px}
+.pwd-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--tx3);padding:4px;display:flex;align-items:center;justify-content:center}
+.pwd-eye svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
 /* TOAST */
 .toast{position:fixed;bottom:calc(env(safe-area-inset-bottom)+72px);left:50%;transform:translateX(-50%) translateY(20px);background:#191917;color:#fff;padding:9px 16px;border-radius:20px;font-size:12.5px;font-weight:500;opacity:0;pointer-events:none;transition:all .22s;z-index:500;display:flex;align-items:center;gap:7px;box-shadow:0 4px 20px rgba(0,0,0,.3);max-width:88vw;text-align:center}
@@ -264,6 +269,10 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
 ::-webkit-scrollbar{width:3px}
 ::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
 /* Grupos colapsáveis no gerenciar */
+/* Fullscreen foto */
+.foto-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out}
+.foto-overlay img{max-width:100%;max-height:90vh;border-radius:8px;object-fit:contain;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.foto-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.15);border:none;border-radius:50%;width:36px;height:36px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;font-size:18px;line-height:1}
 .grp-header{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:var(--nv);border-radius:var(--r);cursor:pointer;user-select:none;margin-bottom:4px}
 .grp-header:active{opacity:.85}
 .grp-title{font-size:13px;font-weight:600;color:#fff;font-family:var(--m)}
@@ -430,7 +439,14 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
         <p class="lsub">ACRC Imóveis — Blumenau / SC</p>
         <div class="lform">
           <div class="lfield"><label>Usuário</label><input id="lu" type="text" placeholder="usuario" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
-          <div class="lfield"><label>Senha</label><input id="lp" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+          <div class="lfield"><label>Senha</label>
+            <div class="pwd-wrap">
+              <input id="lp" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+              <button class="pwd-eye" type="button" onclick="togglePwd('lp',this)" tabindex="-1">
+                <svg id="eye-lp" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+          </div>
           <div class="lerr" id="lerr">Usuário ou senha incorretos.</div>
           <button class="lbtn" onclick="doLogin()">Entrar</button>
         </div>
@@ -502,9 +518,9 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
         </div>
         <p class="asec">Alterar minha senha</p>
         <div class="cpform">
-          <div class="fld"><label>Senha atual</label><input type="password" id="pc" placeholder="Senha atual"></div>
-          <div class="fld"><label>Nova senha</label><input type="password" id="pn2" placeholder="Nova senha"></div>
-          <div class="fld"><label>Confirmar</label><input type="password" id="pk" placeholder="Confirmar nova senha"></div>
+          <div class="fld"><label>Senha atual</label><div class="pwd-wrap"><input type="password" id="pc" placeholder="Senha atual"><button class="pwd-eye" type="button" onclick="togglePwd('pc',this)" tabindex="-1"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+          <div class="fld"><label>Nova senha</label><div class="pwd-wrap"><input type="password" id="pn2" placeholder="Nova senha"><button class="pwd-eye" type="button" onclick="togglePwd('pn2',this)" tabindex="-1"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+          <div class="fld"><label>Confirmar nova senha</label><div class="pwd-wrap"><input type="password" id="pk" placeholder="Confirmar"><button class="pwd-eye" type="button" onclick="togglePwd('pk',this)" tabindex="-1"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
           <button class="addbtn" onclick="changePwd()">Salvar senha</button>
         </div>
         <div id="csv-section" style="display:none">
@@ -596,7 +612,7 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
             <div class="fld"><label>Nome</label><input id="un" placeholder="Nome completo" autocomplete="off"></div>
             <div class="frow">
               <div class="fld"><label>Usuário (login)</label><input id="uu" placeholder="usuario" autocomplete="off" style="font-family:var(--m)"></div>
-              <div class="fld"><label>Senha</label><input type="password" id="up" placeholder="••••••"></div>
+              <div class="fld"><label>Senha</label><div class="pwd-wrap"><input type="password" id="up" placeholder="••••••"><button class="pwd-eye" type="button" onclick="togglePwd('up',this)" tabindex="-1"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
             </div>
             <div class="fld"><label>Perfil</label>
               <select id="ur">
@@ -1110,8 +1126,44 @@ async function initApp() {
   renderList();
   if(can("viewAdmin")) { renderGer(); renderGHist(); }
   if(can("manageUsers")) renderUsers();
-  // Verificar chaves vencidas (uma vez por dia)
-  setTimeout(checkOverdueKeys, 3000);
+  // Agendar verificação de vencidos para o próximo meio-dia
+  scheduleOverdueCheck();
+}
+
+// ── Toggle senha visível/oculta ──────────────────────────
+function togglePwd(id, btn) {
+  const inp = document.getElementById(id);
+  if(!inp) return;
+  const show = inp.type === "password";
+  inp.type = show ? "text" : "password";
+  // Atualiza ícone: olho aberto / olho fechado
+  btn.querySelector("svg").innerHTML = show
+    ? `<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>`
+    : `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
+}
+
+// ── Fullscreen foto ───────────────────────────────────────
+function openFotoFullscreen(src) {
+  const ov = document.createElement("div");
+  ov.className = "foto-overlay";
+  ov.innerHTML = `<img src="${src}" alt="Foto da chave"><button class="foto-close" onclick="this.parentNode.remove()">×</button>`;
+  ov.onclick = e => { if(e.target===ov) ov.remove(); };
+  document.body.appendChild(ov);
+}
+
+function scheduleOverdueCheck() {
+  const now = new Date();
+  const noon = new Date(now);
+  noon.setHours(12, 0, 0, 0);
+  // Se já passou do meio-dia hoje, agenda para amanhã
+  if(now >= noon) noon.setDate(noon.getDate() + 1);
+  const msUntilNoon = noon - now;
+  setTimeout(async () => {
+    await checkOverdueKeys();
+    // Reagendar para o próximo meio-dia (24h depois)
+    setInterval(checkOverdueKeys, 24 * 60 * 60 * 1000);
+  }, msUntilNoon);
+  console.log(`[Overdue] Próxima verificação em ${Math.round(msUntilNoon/60000)} min`);
 }
 
 // ══════════════════════════════════════════
@@ -1224,7 +1276,7 @@ function openKey(idx) {
   const devDate = lastDevH?.changes?.find(c=>c.campo==="Data devolução")?.novo || k.dataDev;
   const histHTML = lastEntry ? `<div class="fld" style="gap:6px"><label>Última movimentação</label><div style="background:var(--s2);border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:2px">${lastEntry.usuario||"—"}</div><div style="font-size:11.5px;color:var(--tx2)">${bl(lastEntry.status)||"—"}${lastEntry.status==="INDISPONÍVEL"&&lastEntry.responsavel?` · <span style="color:var(--tx3)">${lastEntry.responsavel}</span>`:""}${devDate&&lastEntry.status!=="INDISPONÍVEL"?` · <span style="color:var(--tx3)">Dev: ${fd(devDate)}</span>`:""}</div></div><span style="font-size:11px;color:var(--tx3);white-space:nowrap;flex-shrink:0">${fts(lastEntry.ts).split(" ")[0]}</span></div></div>` : `<p style="font-size:12px;color:var(--tx3);text-align:center;padding:8px 0">Sem movimentações.</p>`;
   document.getElementById("mk-b").innerHTML = `
-    ${k.foto?`<img src="${k.foto}" style="width:100%;height:140px;object-fit:cover;border-radius:10px;border:1px solid var(--bd)">`:""} 
+    ${k.foto?`<img src="${k.foto}" style="width:100%;height:140px;object-fit:cover;border-radius:10px;border:1px solid var(--bd);cursor:zoom-in" onclick="openFotoFullscreen('${k.foto}')" title="Toque para ampliar">`:""} 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       ${[["Localização",`<span style="font-family:var(--m);font-weight:600">${k.loc}</span>`],["Status",`<span class="bdg b${bc(k.status)}">${bl(k.status)}</span>`],["Código",k.codigo||"—"],["Responsável",k.responsavel||"—"],["Data saída",fd(k.dataRet)],["Devolução",fd(k.dataDev)]].map(([l,v])=>`<div style="background:var(--s2);border-radius:8px;padding:9px 11px"><div style="font-size:10.5px;color:var(--tx3);margin-bottom:2px">${l}</div><div style="font-size:13px;font-weight:500">${v}</div></div>`).join("")}
       ${k.obs?`<div style="background:var(--s2);border-radius:8px;padding:9px 11px;grid-column:1/-1"><div style="font-size:10.5px;color:var(--tx3);margin-bottom:2px">Observações</div><div style="font-size:13px">${k.obs}</div></div>`:""}
@@ -1365,12 +1417,18 @@ async function saveEdit(andPDF=false) {
   keys[eidx].dataDev = newDataDev;
   keys[eidx].obs = document.getElementById("eob")?.value?.trim()||"";
 
-  // Status rules
-  if(newCodigo && !prev.codigo && keys[eidx].status==="LIVRE") keys[eidx].status="DISPONÍVEL";
+  // Status rules: código preenchido em chave Livre → Disponível
+  if(newCodigo && !prev.codigo && (keys[eidx].status==="LIVRE"||prev.status==="LIVRE")) keys[eidx].status="DISPONÍVEL";
   // DISPONÍVEL: clear dates
   if(keys[eidx].status==="DISPONÍVEL") { keys[eidx].dataRet=""; keys[eidx].dataDev=""; }
-  // LIVRE: clear all operational (except codigo — only cleared by PDF definitivo/novo locatario)
-  if(keys[eidx].status==="LIVRE") { keys[eidx].responsavel=""; keys[eidx].dataRet=""; keys[eidx].dataDev=""; keys[eidx].obs=""; }
+  // LIVRE: limpa TODOS os campos operacionais incluindo código + histórico
+  if(keys[eidx].status==="LIVRE") {
+    keys[eidx].codigo=""; keys[eidx].responsavel="";
+    keys[eidx].dataRet=""; keys[eidx].dataDev=""; keys[eidx].obs="";
+    // Limpar histórico desta chave (nova fase)
+    hist = hist.filter(h => h.loc !== keys[eidx].loc);
+    if(SUPA_URL&&SUPA_KEY) sbFetch("history","DELETE",null,`?loc=eq.${encodeURIComponent(keys[eidx].loc)}`).catch(()=>{});
+  }
 
   const k = keys[eidx];
   const changes = diffFields(prev, k);
@@ -1682,10 +1740,15 @@ let editUserIdx=null;
 function openEditUser(idx){
   editUserIdx=idx;const u=users[idx];
   document.getElementById("meu-t").textContent="Editar: "+u.name;
+  // Perfil só editável pelo Cadastro
+  const canChangeRole = can("manageUsers");
   document.getElementById("meu-b").innerHTML=`
     <div class="fld"><label>Nome</label><input id="eu-n" value="${u.name}"></div>
-    <div class="fld"><label>Senha (deixe em branco para manter)</label><input type="password" id="eu-p" placeholder="Nova senha"></div>
-    <div class="fld"><label>Perfil</label><select id="eu-r">${Object.entries(ROLE_NAMES).map(([v,l])=>`<option value="${v}"${u.role===v?" selected":""}>${l}</option>`).join("")}</select></div>`;
+    <div class="fld"><label>Nova senha (deixe em branco para manter)</label>
+      <div class="pwd-wrap"><input type="password" id="eu-p" placeholder="Nova senha">
+        <button class="pwd-eye" type="button" onclick="togglePwd('eu-p',this)" tabindex="-1"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </div></div>
+    ${canChangeRole?`<div class="fld"><label>Perfil</label><select id="eu-r">${Object.entries(ROLE_NAMES).map(([v,l])=>`<option value="${v}"${u.role===v?" selected":""}>${l}</option>`).join("")}</select></div>`:`<input type="hidden" id="eu-r" value="${u.role}">`}`;
   openSheet("meu");
 }
 function saveUser(){
@@ -2493,9 +2556,7 @@ if(session){ initApp(); }
 async function checkOverdueKeys() {
   if(!cfg.emailDest && !session) return;
   const hoje = new Date().toISOString().slice(0,10);
-  const lastCheck = localStorage.getItem("acrc_overdue_check");
-  // Verifica apenas uma vez por dia
-  if(lastCheck === hoje) return;
+  // Executado pelo agendador — apenas 1x por dia ao meio-dia
   const vencidas = keys.filter(k =>
     k.status === "INDISPONÍVEL" &&
     k.dataDev &&
