@@ -53,15 +53,15 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
 .app{display:flex;flex-direction:column;height:100vh;max-width:480px;margin:0 auto;background:var(--s);box-shadow:0 0 60px rgba(0,0,0,.15)}
 
 /* HEADER */
-.hdr{background:linear-gradient(135deg,var(--nv),var(--nv-lt));padding-top:env(safe-area-inset-top);flex-shrink:0;position:relative;overflow:hidden}
-.hdr::after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;background:rgba(232,101,26,.15);border-radius:50%;pointer-events:none}
-.hdr::before{content:"";position:absolute;left:-20px;bottom:-20px;width:80px;height:80px;background:rgba(232,101,26,.08);border-radius:50%;pointer-events:none}
-.hdr-in{padding:12px 14px;display:flex;align-items:center;gap:11px;position:relative}
-.logo{width:44px;height:44px;background:transparent;border:none;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
+.hdr{background:var(--nv);padding-top:env(safe-area-inset-top);flex-shrink:0;border-bottom:1px solid rgba(255,255,255,.08)}
+.hdr::after{display:none}
+.hdr::before{display:none}
+.hdr-in{padding:10px 14px;display:flex;align-items:center;gap:10px}
+.logo{width:36px;height:36px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
 .logo svg{width:36px;height:36px}
 .hdr-txt{flex:1;min-width:0}
-.hdr-txt h1{font-size:15px;font-weight:600;color:#fff}
-.hdr-txt p{font-size:11px;color:rgba(255,255,255,.6);margin-top:1px}
+.hdr-txt h1{font-size:13px;font-weight:600;color:#fff;letter-spacing:-.01em}
+.hdr-txt p{font-size:10px;color:rgba(255,255,255,.45);margin-top:1px}
 .hdr-user{display:flex;align-items:center;gap:6px}
 .user-chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;font-size:11px;color:#fff;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px}
 .user-chip svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
@@ -278,6 +278,23 @@ body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 /* ── Acesso Interno Screen ── */
 .int-scr{position:fixed;inset:0;background:var(--bg);z-index:300;display:flex;flex-direction:column;overflow:hidden;transform:translateY(100%);transition:transform .32s cubic-bezier(.4,0,.2,1)}
 .int-scr.open{transform:translateY(0)}
+/* ── Seleção Corretor (fluxo retirada) ── */
+.sel-cor-scr{position:fixed;inset:0;background:var(--bg);z-index:350;display:flex;flex-direction:column;overflow:hidden;transform:translateY(100%);transition:transform .32s cubic-bezier(.4,0,.2,1)}
+.sel-cor-scr.open{transform:translateY(0)}
+/* ── Tela Ação Chave (fluxo 5 mockup) ── */
+.acao-scr{position:fixed;inset:0;background:var(--bg);z-index:360;display:flex;flex-direction:column;overflow:hidden;transform:translateY(100%);transition:transform .32s cubic-bezier(.4,0,.2,1)}
+.acao-scr.open{transform:translateY(0)}
+.acao-key-card{background:var(--s);border:1.5px solid var(--bd);border-radius:16px;padding:16px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 8px rgba(0,0,0,.07)}
+.acao-key-icon{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.acao-key-icon svg{width:26px;height:26px;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.acao-user-card{background:var(--s);border:1.5px solid var(--bd);border-radius:14px;padding:13px 14px;display:flex;align-items:center;gap:12px}
+.acao-user-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#fff;flex-shrink:0}
+.acao-ret-btn{width:100%;padding:15px;background:var(--gn);color:#fff;border:none;border-radius:14px;font-family:var(--f);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;transition:all .15s;box-shadow:0 4px 16px rgba(45,190,96,.3);letter-spacing:.01em}
+.acao-ret-btn:active{background:var(--gn-dk,#1a9e4a);transform:scale(.97);box-shadow:none}
+.acao-ret-btn svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.acao-dev-btn{width:100%;padding:15px;background:var(--nv);color:#fff;border:none;border-radius:14px;font-family:var(--f);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;transition:all .15s;box-shadow:0 4px 16px rgba(17,40,74,.22);letter-spacing:.01em}
+.acao-dev-btn:active{background:var(--nv-dk,#0a1a32);transform:scale(.97);box-shadow:none}
+.acao-dev-btn svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .int-hdr{background:var(--nv);padding:env(safe-area-inset-top) 0 0;flex-shrink:0}
 .int-hdr-in{padding:13px 16px;display:flex;align-items:center;gap:12px}
 .int-back{background:rgba(255,255,255,.12);border:none;border-radius:9px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;flex-shrink:0;transition:background .15s}
@@ -801,6 +818,62 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
     <div class="shhd"><h2 id="meu-t">Editar Usuário</h2><button class="shcl" onclick="closeSheet('meu')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
     <div class="shbd" id="meu-b"></div>
     <div class="shft"><button class="bs" onclick="closeSheet('meu')">Cancelar</button><button class="bp" onclick="saveUser()">Salvar</button></div>
+  </div>
+</div>
+
+<!-- SELEÇÃO DE CORRETOR (fluxo retirada interna) -->
+<div class="sel-cor-scr" id="sel-cor-scr">
+  <div class="int-hdr"><div class="int-hdr-in">
+    <button class="int-back" onclick="closeSelCor()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <div><div class="int-title">Selecione o Usuário</div><div class="int-sub" id="sel-cor-sub">Quem está retirando a chave?</div></div>
+    <button onclick="closeSelCor()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div></div>
+  <div class="int-search"><div class="sw"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="search" id="sel-cor-q" placeholder="Buscar usuário..." oninput="renderSelCor()" autocomplete="off"></div></div>
+  <div class="int-list" id="sel-cor-list"></div>
+</div>
+
+<!-- TELA AÇÃO DA CHAVE (fluxo mockup 5) -->
+<div class="acao-scr" id="acao-scr">
+  <div class="int-hdr"><div class="int-hdr-in">
+    <button class="int-back" onclick="closeAcaoScr()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <div class="int-title" id="acao-title">Ação da Chave</div>
+    <button onclick="closeAcaoScr()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div></div>
+  <div style="padding:20px 16px;display:flex;flex-direction:column;gap:14px;flex:1;overflow-y:auto">
+    <!-- Key card -->
+    <div class="acao-key-card" id="acao-key-card">
+      <div class="acao-key-icon" id="acao-key-icon"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-family:var(--m);font-size:20px;font-weight:700;color:var(--tx)" id="acao-key-loc"></div>
+        <div id="acao-key-status" style="margin-top:4px"></div>
+      </div>
+    </div>
+    <!-- User card -->
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Usuário Selecionado</div>
+      <div class="acao-user-card" id="acao-user-card">
+        <div class="acao-user-avatar" id="acao-user-avatar"></div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:600;color:var(--tx)" id="acao-user-name"></div>
+          <div style="font-size:12px;color:var(--tx3);margin-top:1px" id="acao-user-role"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Action buttons -->
+    <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+      <button class="acao-ret-btn" id="acao-ret-btn" onclick="confirmarRetiradaInterna()">
+        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Retirar Chave
+      </button>
+      <button class="acao-dev-btn" id="acao-dev-btn" onclick="confirmarDevolucaoInterna()">
+        <svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        Devolver Chave
+      </button>
+    </div>
   </div>
 </div>
 
@@ -2614,14 +2687,13 @@ function etqGetQRDataURL(text, size=80) {
 }
 
 // ══════════════════════════════════════════
-// ACESSO INTERNO
+// ACESSO INTERNO — login rápido (sem senha)
 // ══════════════════════════════════════════
 function openInternalAccess() {
-  const el = document.getElementById('int-scr');
-  el.classList.add('open');
+  document.getElementById('int-scr').classList.add('open');
   document.getElementById('int-q').value = '';
   renderInternalUsers();
-  setTimeout(() => document.getElementById('int-q').focus(), 300);
+  setTimeout(() => document.getElementById('int-q')?.focus(), 300);
 }
 function closeInternalAccess() {
   document.getElementById('int-scr').classList.remove('open');
@@ -2634,15 +2706,16 @@ function renderInternalUsers() {
     (!q || u.name.toLowerCase().includes(q) || u.user.toLowerCase().includes(q))
   );
   const RC = {corretor:'#3B82F6',vistoria:'#2DBE60',adm:'#F47A20',cadastro:'#11284A'};
-  if(!eligible.length) {
+  if(!eligible.length){
     el.innerHTML=`<div style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">Nenhum usuário encontrado.</div>`;
     return;
   }
   el.innerHTML = eligible.map(u => {
     const initials = u.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
     const idx = users.indexOf(u);
+    const col = RC[u.role]||'#11284A';
     return `<div class="int-ucard">
-      <div class="int-uavatar" style="background:${RC[u.role]||'#11284A'}">${initials}</div>
+      <div class="int-uavatar" style="background:${col}">${initials}</div>
       <div style="flex:1;min-width:0">
         <div class="int-uname">${u.name}</div>
         <div class="int-urole">${ROLE_NAMES[u.role]||u.role}</div>
@@ -2657,6 +2730,188 @@ function selectInternalUser(idx) {
   sessionStorage.setItem(SK.ss, JSON.stringify(session));
   closeInternalAccess();
   initApp();
+}
+
+// ══════════════════════════════════════════
+// FLUXO INTERNO DE RETIRADA
+// Chave → clica Retirar → seleciona corretor → tela ação → confirma
+// ══════════════════════════════════════════
+let _acaoKeyIdx = null; // índice da chave sendo retirada/devolvida
+let _acaoUserIdx = null; // índice do usuário selecionado
+
+// Abre seleção de corretor para uma chave específica
+function openSelCor(keyIdx) {
+  _acaoKeyIdx = keyIdx;
+  const k = keys[keyIdx];
+  document.getElementById('sel-cor-sub').textContent = `Chave: ${k.loc}${k.codigo?' · '+k.codigo:''}`;
+  document.getElementById('sel-cor-q').value = '';
+  renderSelCor();
+  document.getElementById('sel-cor-scr').classList.add('open');
+  setTimeout(() => document.getElementById('sel-cor-q')?.focus(), 300);
+}
+function closeSelCor() {
+  document.getElementById('sel-cor-scr').classList.remove('open');
+  _acaoKeyIdx = null; _acaoUserIdx = null;
+}
+
+function renderSelCor() {
+  const q = (document.getElementById('sel-cor-q')?.value||'').trim().toLowerCase();
+  const el = document.getElementById('sel-cor-list');
+  // Mostra todos os usuários operacionais (corretor + vistoria)
+  const eligible = users.filter(u =>
+    (u.role==='corretor'||u.role==='vistoria') &&
+    (!q || u.name.toLowerCase().includes(q) || u.user.toLowerCase().includes(q))
+  );
+  const RC = {corretor:'#3B82F6',vistoria:'#2DBE60',adm:'#F47A20',cadastro:'#11284A'};
+  if(!eligible.length){
+    el.innerHTML=`<div style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">Nenhum usuário encontrado.</div>`;
+    return;
+  }
+  el.innerHTML = eligible.map(u => {
+    const initials = u.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const idx = users.indexOf(u);
+    const col = RC[u.role]||'#11284A';
+    return `<div class="int-ucard">
+      <div class="int-uavatar" style="background:${col}">${initials}</div>
+      <div style="flex:1;min-width:0">
+        <div class="int-uname">${u.name}</div>
+        <div class="int-urole">${ROLE_NAMES[u.role]||u.role}</div>
+      </div>
+      <button class="int-selbtn" onclick="openAcaoScr(${idx})">Selecionar</button>
+    </div>`;
+  }).join('');
+}
+
+// Abre tela de ação (mockup 5) com chave + usuário selecionado
+function openAcaoScr(userIdx) {
+  if(_acaoKeyIdx === null) return;
+  _acaoUserIdx = userIdx;
+  const k = keys[_acaoKeyIdx];
+  const u = users[userIdx];
+  const c = bc(k.status);
+  const statusColors = {d:'var(--gn-bg)',i:'var(--am-bg)',n:'var(--cr-bg)',l:'var(--s2)'};
+  const statusStrokes = {d:'var(--gn)',i:'var(--or)',n:'var(--cr)',l:'var(--tx3)'};
+  const statusLabels = {d:'Disponível',i:'Indisponível',n:'Não Localizada',l:'Livre'};
+  const RC = {corretor:'#3B82F6',vistoria:'#2DBE60',adm:'#F47A20',cadastro:'#11284A'};
+
+  // Key icon
+  const icon = document.getElementById('acao-key-icon');
+  icon.style.background = statusColors[c]||'var(--s2)';
+  icon.innerHTML = `<svg viewBox="0 0 24 24" style="stroke:${statusStrokes[c]||'var(--tx3)'}"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>`;
+
+  // Key info
+  document.getElementById('acao-key-loc').textContent = k.loc;
+  document.getElementById('acao-key-status').innerHTML =
+    `<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;background:${statusColors[c]};color:${statusStrokes[c]}">
+      <span style="width:7px;height:7px;border-radius:50%;background:${statusStrokes[c]};flex-shrink:0;display:inline-block"></span>${statusLabels[c]||bl(k.status)}</span>`;
+
+  document.getElementById('acao-title').textContent = `Chave ${k.loc}`;
+
+  // User info
+  const initials = u.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const avatar = document.getElementById('acao-user-avatar');
+  avatar.textContent = initials;
+  avatar.style.background = RC[u.role]||'#11284A';
+  document.getElementById('acao-user-name').textContent = u.name;
+  document.getElementById('acao-user-role').textContent = ROLE_NAMES[u.role]||u.role;
+
+  // Show/hide buttons based on status
+  const isDisp = k.status==='DISPONÍVEL'||k.status==='LIVRE';
+  const isIndisp = k.status==='INDISPONÍVEL';
+  document.getElementById('acao-ret-btn').style.display = isDisp ? 'flex' : 'none';
+  document.getElementById('acao-dev-btn').style.display = isIndisp ? 'flex' : 'none';
+
+  document.getElementById('acao-scr').classList.add('open');
+}
+
+function closeAcaoScr() {
+  document.getElementById('acao-scr').classList.remove('open');
+}
+
+// Confirma retirada com o usuário selecionado
+async function confirmarRetiradaInterna() {
+  if(_acaoKeyIdx === null || _acaoUserIdx === null) return;
+  const k = keys[_acaoKeyIdx];
+  const u = users[_acaoUserIdx];
+  const prev = {...k};
+
+  // Executar retirada como o usuário selecionado
+  const now = new Date();
+  k.status = 'INDISPONÍVEL';
+  k.responsavel = u.name;
+  k.dataRet = now.toISOString().slice(0,10);
+  k.dataDev = '';
+  const changes = [
+    {campo:'Status',anterior:bl(prev.status),novo:bl(k.status)},
+    {campo:'Responsável',anterior:prev.responsavel||'',novo:k.responsavel},
+    {campo:'Data saída',anterior:prev.dataRet||'',novo:k.dataRet}
+  ];
+
+  // Registrar no histórico com o usuário selecionado
+  const entry = {
+    id:Date.now(),tipo:'SAÍDA',loc:k.loc,codigo:k.codigo||'',
+    responsavel:k.responsavel,status:k.status,
+    ts:now.toISOString(),
+    usuario:u.name,perfil:u.role,
+    changes,hora:now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})
+  };
+  hist.unshift(entry);
+  if(hist.length>2000) hist.length=2000;
+  syncHist(entry);
+  saveAll(); syncKey(k); renderList(); renderGer(); renderGHist();
+
+  // Email automático
+  const subj = `Saída de chave — ${k.loc} — ${u.name} — ${now.toLocaleDateString('pt-BR')}`;
+  sendAutoEmail(subj, changes, k);
+
+  // Fechar telas
+  closeAcaoScr();
+  closeSelCor();
+  document.querySelectorAll('.bkdp.open').forEach(b=>b.classList.remove('open'));
+
+  // Mostrar confirmação
+  showConfirmation('retirada', k.loc, u.name,
+    now.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}));
+
+  _acaoKeyIdx=null; _acaoUserIdx=null;
+}
+
+// Confirma devolução com o usuário selecionado
+async function confirmarDevolucaoInterna() {
+  if(_acaoKeyIdx === null || _acaoUserIdx === null) return;
+  const k = keys[_acaoKeyIdx];
+  const u = users[_acaoUserIdx];
+  const prev = {...k};
+
+  const now = new Date();
+  k.status = 'DISPONÍVEL';
+  k.dataDev = now.toISOString().slice(0,10);
+  k.dataRet = ''; k.responsavel = '';
+  const changes = [
+    {campo:'Status',anterior:bl(prev.status),novo:bl(k.status)},
+    {campo:'Data devolução',anterior:prev.dataDev||'',novo:k.dataDev},
+    {campo:'Responsável',anterior:prev.responsavel||'',novo:''}
+  ];
+  const entry = {
+    id:Date.now(),tipo:'DEVOLUÇÃO',loc:k.loc,codigo:k.codigo||'',
+    responsavel:prev.responsavel||'',status:k.status,
+    ts:now.toISOString(),usuario:u.name,perfil:u.role,
+    changes,hora:now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})
+  };
+  hist.unshift(entry);
+  if(hist.length>2000) hist.length=2000;
+  syncHist(entry);
+  saveAll(); syncKey(k); renderList(); renderGer(); renderGHist();
+
+  const subj = `Devolução de chave — ${k.loc} — ${now.toLocaleDateString('pt-BR')}`;
+  sendAutoEmail(subj, changes, k);
+
+  closeAcaoScr(); closeSelCor();
+  document.querySelectorAll('.bkdp.open').forEach(b=>b.classList.remove('open'));
+  showConfirmation('devolvida', k.loc, u.name,
+    now.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}));
+
+  _acaoKeyIdx=null; _acaoUserIdx=null;
 }
 
 // ══════════════════════════════════════════
