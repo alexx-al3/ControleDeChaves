@@ -275,26 +275,80 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
 /* ── Inter font smoothing ── */
 body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 
-/* ── Acesso Interno Screen ── */
-.int-scr{position:fixed;inset:0;background:var(--bg);z-index:300;display:flex;flex-direction:column;overflow:hidden;transform:translateY(100%);transition:transform .32s cubic-bezier(.4,0,.2,1)}
-.int-scr.open{transform:translateY(0)}
-/* ── Seleção Corretor (fluxo retirada) ── */
-.sel-cor-scr{position:fixed;inset:0;background:var(--bg);z-index:350;display:flex;flex-direction:column;overflow:hidden;transform:translateY(100%);transition:transform .32s cubic-bezier(.4,0,.2,1)}
-.sel-cor-scr.open{transform:translateY(0)}
-/* ── Tela Ação Chave (fluxo 5 mockup) ── */
-.acao-scr{position:fixed;inset:0;background:var(--bg);z-index:360;display:flex;flex-direction:column;overflow:hidden;transform:translateY(100%);transition:transform .32s cubic-bezier(.4,0,.2,1)}
-.acao-scr.open{transform:translateY(0)}
-.acao-key-card{background:var(--s);border:1.5px solid var(--bd);border-radius:16px;padding:16px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 8px rgba(0,0,0,.07)}
-.acao-key-icon{width:56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.acao-key-icon svg{width:26px;height:26px;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.acao-user-card{background:var(--s);border:1.5px solid var(--bd);border-radius:14px;padding:13px 14px;display:flex;align-items:center;gap:12px}
-.acao-user-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#fff;flex-shrink:0}
-.acao-ret-btn{width:100%;padding:15px;background:var(--gn);color:#fff;border:none;border-radius:14px;font-family:var(--f);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;transition:all .15s;box-shadow:0 4px 16px rgba(45,190,96,.3);letter-spacing:.01em}
+/* ══ Telas do fluxo interno (slideUp) ══ */
+.int-scr,.sel-cor-scr,.acao-scr{
+  position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;
+  overflow:hidden;transform:translateY(100%);
+  transition:transform .3s cubic-bezier(.4,0,.2,1)
+}
+.int-scr{z-index:300}.sel-cor-scr{z-index:350}.acao-scr{z-index:360}
+.int-scr.open,.sel-cor-scr.open,.acao-scr.open{transform:translateY(0)}
+
+/* ── Header minimalista das telas internas ── */
+.int-hdr{background:var(--nv);padding-top:env(safe-area-inset-top);flex-shrink:0}
+.int-hdr-in{padding:12px 16px;display:flex;align-items:center;gap:10px;min-height:52px}
+.int-back{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);
+  border-radius:50%;width:34px;height:34px;display:flex;align-items:center;
+  justify-content:center;cursor:pointer;color:#fff;flex-shrink:0;transition:background .15s}
+.int-back:active{background:rgba(255,255,255,.2)}
+.int-back svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.int-title{font-size:15px;font-weight:700;color:#fff;flex:1;letter-spacing:-.01em}
+.int-sub{font-size:11px;color:rgba(255,255,255,.5);font-weight:400;margin-top:1px}
+.int-close{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);
+  border-radius:50%;width:30px;height:30px;display:flex;align-items:center;
+  justify-content:center;cursor:pointer;color:#fff;flex-shrink:0}
+.int-close svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── Barra de busca interna ── */
+.int-search{padding:10px 16px;background:var(--s);border-bottom:1px solid var(--bd);flex-shrink:0}
+
+/* ── Lista scroll suave ── */
+.int-list{flex:1;overflow-y:auto;padding:12px 16px 80px;
+  display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch}
+
+/* ── Card de usuário premium ── */
+.int-ucard{background:var(--s);border:1.5px solid var(--bd);border-radius:16px;
+  padding:13px 14px;display:flex;align-items:center;gap:13px;
+  box-shadow:var(--sh-sm);transition:all .15s;cursor:pointer}
+.int-ucard:active{transform:scale(.97);border-color:var(--or);box-shadow:0 0 0 3px rgba(244,122,32,.12)}
+.int-uavatar{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-weight:700;font-size:16px;color:#fff;flex-shrink:0;
+  box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.int-uname{font-size:14px;font-weight:600;color:var(--tx);letter-spacing:-.01em}
+.int-urole{font-size:12px;color:var(--tx3);margin-top:2px;font-weight:400}
+.int-selbtn{padding:8px 18px;background:var(--nv);color:#fff;border:none;
+  border-radius:20px;font-family:var(--f);font-size:12px;font-weight:600;
+  cursor:pointer;flex-shrink:0;transition:all .15s;letter-spacing:.01em}
+.int-selbtn:active{background:var(--nv-dk);transform:scale(.95)}
+
+/* ── Tela Ação da Chave ── */
+.acao-body{padding:20px 16px;display:flex;flex-direction:column;gap:16px;flex:1;overflow-y:auto}
+.acao-key-card{background:var(--s);border:1.5px solid var(--bd);border-radius:18px;
+  padding:18px;display:flex;align-items:center;gap:15px;
+  box-shadow:0 2px 12px rgba(0,0,0,.07)}
+.acao-key-icon{width:58px;height:58px;border-radius:16px;display:flex;
+  align-items:center;justify-content:center;flex-shrink:0}
+.acao-key-icon svg{width:28px;height:28px;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.acao-user-card{background:var(--s);border:1.5px solid var(--bd);border-radius:14px;
+  padding:14px;display:flex;align-items:center;gap:13px;
+  box-shadow:var(--sh-sm)}
+.acao-user-avatar{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-weight:700;font-size:17px;color:#fff;flex-shrink:0;
+  box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.acao-btns{display:flex;flex-direction:column;gap:11px;margin-top:4px}
+.acao-ret-btn{width:100%;padding:16px;background:var(--gn);color:#fff;border:none;
+  border-radius:16px;font-family:var(--f);font-size:16px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:all .15s;letter-spacing:.01em;
+  box-shadow:0 6px 20px rgba(45,190,96,.32)}
 .acao-ret-btn:active{background:var(--gn-dk,#1a9e4a);transform:scale(.97);box-shadow:none}
-.acao-ret-btn svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.acao-dev-btn{width:100%;padding:15px;background:var(--nv);color:#fff;border:none;border-radius:14px;font-family:var(--f);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;transition:all .15s;box-shadow:0 4px 16px rgba(17,40,74,.22);letter-spacing:.01em}
+.acao-ret-btn svg,.acao-dev-btn svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.acao-dev-btn{width:100%;padding:16px;background:var(--nv);color:#fff;border:none;
+  border-radius:16px;font-family:var(--f);font-size:16px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:all .15s;letter-spacing:.01em;
+  box-shadow:0 6px 20px rgba(17,40,74,.25)}
 .acao-dev-btn:active{background:var(--nv-dk,#0a1a32);transform:scale(.97);box-shadow:none}
-.acao-dev-btn svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .int-hdr{background:var(--nv);padding:env(safe-area-inset-top) 0 0;flex-shrink:0}
 .int-hdr-in{padding:13px 16px;display:flex;align-items:center;gap:12px}
 .int-back{background:rgba(255,255,255,.12);border:none;border-radius:9px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;flex-shrink:0;transition:background .15s}
@@ -823,48 +877,58 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
 
 <!-- SELEÇÃO DE CORRETOR (fluxo retirada interna) -->
 <div class="sel-cor-scr" id="sel-cor-scr">
-  <div class="int-hdr"><div class="int-hdr-in">
-    <button class="int-back" onclick="closeSelCor()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
-    <div><div class="int-title">Selecione o Usuário</div><div class="int-sub" id="sel-cor-sub">Quem está retirando a chave?</div></div>
-    <button onclick="closeSelCor()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff">
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-  </div></div>
-  <div class="int-search"><div class="sw"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="search" id="sel-cor-q" placeholder="Buscar usuário..." oninput="renderSelCor()" autocomplete="off"></div></div>
+  <div class="int-hdr">
+    <div class="int-hdr-in">
+      <button class="int-back" onclick="closeSelCor()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div style="flex:1">
+        <div class="int-title">Selecionar Usuário</div>
+        <div class="int-sub" id="sel-cor-sub">Quem está retirando a chave?</div>
+      </div>
+      <button class="int-close" onclick="closeSelCor()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  </div>
+  <div class="int-search">
+    <div class="sw">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" id="sel-cor-q" placeholder="Buscar por nome..." oninput="renderSelCor()" autocomplete="off">
+    </div>
+  </div>
+  <div class="lmeta" id="sel-cor-meta" style="padding:6px 16px 2px;flex-shrink:0"></div>
   <div class="int-list" id="sel-cor-list"></div>
 </div>
 
 <!-- TELA AÇÃO DA CHAVE (fluxo mockup 5) -->
 <div class="acao-scr" id="acao-scr">
-  <div class="int-hdr"><div class="int-hdr-in">
-    <button class="int-back" onclick="closeAcaoScr()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
-    <div class="int-title" id="acao-title">Ação da Chave</div>
-    <button onclick="closeAcaoScr()" style="background:rgba(255,255,255,.12);border:none;border-radius:8px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff">
-      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-  </div></div>
-  <div style="padding:20px 16px;display:flex;flex-direction:column;gap:14px;flex:1;overflow-y:auto">
+  <div class="int-hdr">
+    <div class="int-hdr-in">
+      <button class="int-back" onclick="closeAcaoScr()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="int-title" id="acao-title">Ação da Chave</div>
+      <button class="int-close" onclick="closeAcaoScr()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  </div>
+  <div class="acao-body">
     <!-- Key card -->
-    <div class="acao-key-card" id="acao-key-card">
+    <div class="acao-key-card">
       <div class="acao-key-icon" id="acao-key-icon"></div>
       <div style="flex:1;min-width:0">
-        <div style="font-family:var(--m);font-size:20px;font-weight:700;color:var(--tx)" id="acao-key-loc"></div>
-        <div id="acao-key-status" style="margin-top:4px"></div>
+        <div style="font-family:var(--m);font-size:22px;font-weight:700;color:var(--tx);letter-spacing:-.02em" id="acao-key-loc"></div>
+        <div id="acao-key-status" style="margin-top:6px"></div>
       </div>
     </div>
-    <!-- User card -->
+    <!-- User label -->
     <div>
-      <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Usuário Selecionado</div>
-      <div class="acao-user-card" id="acao-user-card">
+      <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Usuário Selecionado</div>
+      <div class="acao-user-card">
         <div class="acao-user-avatar" id="acao-user-avatar"></div>
-        <div style="flex:1">
-          <div style="font-size:14px;font-weight:600;color:var(--tx)" id="acao-user-name"></div>
-          <div style="font-size:12px;color:var(--tx3);margin-top:1px" id="acao-user-role"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:15px;font-weight:600;color:var(--tx);letter-spacing:-.01em" id="acao-user-name"></div>
+          <div style="font-size:12px;color:var(--tx3);margin-top:2px" id="acao-user-role"></div>
         </div>
+        <button onclick="closeAcaoScr()" style="font-size:12px;color:var(--bl);background:var(--bl-bg);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-family:var(--f);font-weight:500">Trocar</button>
       </div>
     </div>
     <!-- Action buttons -->
-    <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+    <div class="acao-btns">
       <button class="acao-ret-btn" id="acao-ret-btn" onclick="confirmarRetiradaInterna()">
         <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Retirar Chave
@@ -879,11 +943,23 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
 
 <!-- ACESSO INTERNO -->
 <div class="int-scr" id="int-scr">
-  <div class="int-hdr"><div class="int-hdr-in">
-    <button class="int-back" onclick="closeInternalAccess()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
-    <div><div class="int-title">Acesso Interno</div><div class="int-sub">Selecione seu nome para continuar</div></div>
-  </div></div>
-  <div class="int-search"><div class="sw"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="search" id="int-q" placeholder="Buscar usuário..." oninput="renderInternalUsers()" autocomplete="off"></div></div>
+  <div class="int-hdr">
+    <div class="int-hdr-in">
+      <button class="int-back" onclick="closeInternalAccess()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div style="flex:1">
+        <div class="int-title">Acesso Interno</div>
+        <div class="int-sub">Selecione seu nome para continuar</div>
+      </div>
+      <button class="int-close" onclick="closeInternalAccess()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+  </div>
+  <div class="int-search">
+    <div class="sw">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="search" id="int-q" placeholder="Buscar por nome..." oninput="renderInternalUsers()" autocomplete="off">
+    </div>
+  </div>
+  <div class="lmeta" id="int-meta" style="padding:6px 16px 2px;flex-shrink:0"></div>
   <div class="int-list" id="int-list"></div>
 </div>
 
@@ -2701,17 +2777,25 @@ function closeInternalAccess() {
 function renderInternalUsers() {
   const q = (document.getElementById('int-q')?.value||'').trim().toLowerCase();
   const el = document.getElementById('int-list');
+  const meta = document.getElementById('int-meta');
   const eligible = users.filter(u =>
     (u.role==='corretor'||u.role==='vistoria') &&
     (!q || u.name.toLowerCase().includes(q) || u.user.toLowerCase().includes(q))
   );
   const RC = {corretor:'#3B82F6',vistoria:'#2DBE60',adm:'#F47A20',cadastro:'#11284A'};
+  if(meta) meta.textContent = eligible.length ? `${eligible.length} usuário${eligible.length>1?'s':''}` : '';
   if(!eligible.length){
-    el.innerHTML=`<div style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">Nenhum usuário encontrado.</div>`;
+    el.innerHTML=`<div style="text-align:center;padding:40px 20px;color:var(--tx3);font-size:13px">
+      <div style="font-size:32px;margin-bottom:10px">🔍</div>
+      Nenhum usuário encontrado.
+    </div>`;
     return;
   }
   el.innerHTML = eligible.map(u => {
-    const initials = u.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const words = u.name.trim().split(' ');
+    const initials = words.length >= 2
+      ? (words[0][0] + words[words.length-1][0]).toUpperCase()
+      : (u.name.slice(0,2)).toUpperCase();
     const idx = users.indexOf(u);
     const col = RC[u.role]||'#11284A';
     return `<div class="int-ucard">
@@ -2757,18 +2841,25 @@ function closeSelCor() {
 function renderSelCor() {
   const q = (document.getElementById('sel-cor-q')?.value||'').trim().toLowerCase();
   const el = document.getElementById('sel-cor-list');
-  // Mostra todos os usuários operacionais (corretor + vistoria)
+  const meta = document.getElementById('sel-cor-meta');
   const eligible = users.filter(u =>
     (u.role==='corretor'||u.role==='vistoria') &&
     (!q || u.name.toLowerCase().includes(q) || u.user.toLowerCase().includes(q))
   );
   const RC = {corretor:'#3B82F6',vistoria:'#2DBE60',adm:'#F47A20',cadastro:'#11284A'};
+  if(meta) meta.textContent = eligible.length ? `${eligible.length} usuário${eligible.length>1?'s':''}` : '';
   if(!eligible.length){
-    el.innerHTML=`<div style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">Nenhum usuário encontrado.</div>`;
+    el.innerHTML=`<div style="text-align:center;padding:40px 20px;color:var(--tx3);font-size:13px">
+      <div style="font-size:32px;margin-bottom:10px">🔍</div>
+      Nenhum usuário encontrado.
+    </div>`;
     return;
   }
   el.innerHTML = eligible.map(u => {
-    const initials = u.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const words = u.name.trim().split(' ');
+    const initials = words.length >= 2
+      ? (words[0][0] + words[words.length-1][0]).toUpperCase()
+      : (u.name.slice(0,2)).toUpperCase();
     const idx = users.indexOf(u);
     const col = RC[u.role]||'#11284A';
     return `<div class="int-ucard">
@@ -2808,7 +2899,8 @@ function openAcaoScr(userIdx) {
   document.getElementById('acao-title').textContent = `Chave ${k.loc}`;
 
   // User info
-  const initials = u.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const _words = u.name.trim().split(' ');
+  const initials = _words.length >= 2 ? (_words[0][0]+_words[_words.length-1][0]).toUpperCase() : u.name.slice(0,2).toUpperCase();
   const avatar = document.getElementById('acao-user-avatar');
   avatar.textContent = initials;
   avatar.style.background = RC[u.role]||'#11284A';
