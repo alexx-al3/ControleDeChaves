@@ -516,6 +516,16 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
 .etq-preview-sub{font-size:11px;color:var(--tx3);margin-top:1px}
 .etq-preview-qr{width:56px;height:56px;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
+/* ── Feedback suave nos botões que faltavam ── */
+.user-pill{transition:background .15s,transform .12s;-webkit-tap-highlight-color:transparent}
+.user-pill:active{transform:scale(.95);background:rgba(255,255,255,.22)!important}
+.l-internal-btn{transition:background .15s,transform .12s,border-color .15s;-webkit-tap-highlight-color:transparent}
+.l-internal-btn:active{transform:scale(.97)!important;background:var(--s2)!important;border-color:var(--or)!important}
+.int-selbtn{-webkit-tap-highlight-color:transparent}
+.int-selbtn:active{transform:scale(.95)!important}
+.conf-btn{-webkit-tap-highlight-color:transparent}
+.conf-btn:active{transform:scale(.97)!important}
+.acao-ret-btn:active,.acao-dev-btn:active{transform:scale(.97)!important;box-shadow:none!important}
 .empty svg[style*="animation"]{stroke:var(--or);fill:none;stroke-width:2;stroke-linecap:round}
 </style>
 </head>
@@ -3103,20 +3113,6 @@ function toast(msg,err=false){const el=document.getElementById("toast");document
 load();
 if(session){ initApp(); }
 
-// ── Ripple effect em todos os botões ─────────────────────────
-document.addEventListener('pointerdown', function(e) {
-  const btn = e.target.closest('.bp,.bn2,.lbtn,.addbtn,.bdng,.btn-retirar,.btn-devolver,.acao-ret-btn,.acao-dev-btn,.conf-btn,.int-selbtn');
-  if(!btn) return;
-  const rect = btn.getBoundingClientRect();
-  const size = Math.max(rect.width, rect.height) * 2;
-  const x = e.clientX - rect.left - size/2;
-  const y = e.clientY - rect.top - size/2;
-  const ripple = document.createElement('span');
-  ripple.className = 'ripple-effect';
-  ripple.style.cssText = `width:${size}px;height:${size}px;left:${x}px;top:${y}px`;
-  btn.appendChild(ripple);
-  setTimeout(() => ripple.remove(), 520);
-}, {passive:true});
 // else: login screen is shown by default
 
 // ══════════════════════════════════════════
