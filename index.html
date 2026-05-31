@@ -3109,8 +3109,7 @@ function exportProdCSV() {
   const filtered = prodData.filter(r=>r.mes===mesSel&&(corSel==='todos'||r.corretor===corSel));
   if(!filtered.length){toast("Sem dados para exportar",true);return;}
   const rows=[['Data/Hora','Tipo','Corretor','Imóvel','Cliente','Contato'],...filtered.map(r=>[r.data_fmt,tipoLabel(r.tipo),r.corretor,r.imovel||'',r.cliente||'',r.contato||''])];
-  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('
-');
+const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,﻿'+encodeURIComponent(csv);
   a.download=`Produtividade_${fmtMes(mesSel).replace('/','_')}.csv`;a.click();
   toast("CSV exportado!");
