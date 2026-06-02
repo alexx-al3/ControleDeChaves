@@ -66,7 +66,7 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
 .user-chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:4px 10px;font-size:11px;color:#fff;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px}
 .user-chip svg{width:12px;height:12px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .profile-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.pd-cadastro{background:#4ade80} .pd-adm{background:#facc15} .pd-corretor{background:#93c5fd} .pd-vistoria{background:#86efac} .pd-gerente{background:#c4b5fd}
+.pd-cadastro{background:#4ade80} .pd-adm{background:#facc15} .pd-corretor{background:#93c5fd} .pd-vistoria{background:#86efac}
 .hbtn{background:rgba(255,255,255,.14);border:none;border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;flex-shrink:0}
 .hbtn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
@@ -245,7 +245,7 @@ body{font-family:var(--f);color:var(--tx);font-size:15px;line-height:1.5}
 /* USERS */
 .user-card{background:var(--s);border:1px solid var(--bd);border-radius:var(--r);padding:10px 13px;display:flex;align-items:center;gap:10px}
 .user-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;color:#fff;flex-shrink:0}
-.ua-cadastro{background:var(--nv)} .ua-adm{background:var(--or)} .ua-corretor{background:var(--bl)} .ua-vistoria{background:var(--gn)} .ua-gerente{background:var(--pu)}
+.ua-cadastro{background:var(--nv)} .ua-adm{background:var(--or)} .ua-corretor{background:var(--bl)} .ua-vistoria{background:var(--gn)}
 .user-info{flex:1;min-width:0}
 .user-name{font-size:13.5px;font-weight:600;color:var(--tx)}
 .user-role{font-size:11px;color:var(--tx3);margin-top:1px}
@@ -501,31 +501,6 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
 .btn-retirar:disabled,.btn-devolver:disabled{opacity:.35;cursor:not-allowed}
 /* Vistoria screen */
 .vis-body{padding:14px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
-/* ── Plantão / Produtividade ── */
-.plant-scr{position:fixed;inset:0;background:var(--bg);z-index:310;display:flex;flex-direction:column;overflow:hidden;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1)}
-.plant-scr.open{transform:translateY(0)}
-.plant-body{flex:1;overflow-y:auto;padding:20px 16px;display:flex;flex-direction:column;gap:14px;-webkit-overflow-scrolling:touch}
-.plant-btn{width:100%;padding:18px 20px;border:none;border-radius:16px;font-family:var(--f);font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .15s;text-align:left;-webkit-tap-highlight-color:transparent}
-.plant-btn:active{transform:scale(.97)!important;filter:brightness(.93)}
-.plant-btn-icon{width:50px;height:50px;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.plant-btn-icon svg{width:26px;height:26px;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.plant-btn.entrada{background:linear-gradient(135deg,var(--gn),#22a855);color:#fff;box-shadow:0 6px 20px rgba(45,190,96,.3)}
-.plant-btn.entrada .plant-btn-icon{background:rgba(255,255,255,.2)} .plant-btn.entrada svg{stroke:#fff}
-.plant-btn.saida{background:linear-gradient(135deg,var(--nv),var(--nv-lt));color:#fff;box-shadow:0 6px 20px rgba(17,40,74,.25)}
-.plant-btn.saida .plant-btn-icon{background:rgba(255,255,255,.15)} .plant-btn.saida svg{stroke:#fff}
-.plant-btn.visita{background:linear-gradient(135deg,var(--or),#f5932a);color:#fff;box-shadow:0 6px 20px rgba(244,122,32,.3)}
-.plant-btn.visita .plant-btn-icon{background:rgba(255,255,255,.2)} .plant-btn.visita svg{stroke:#fff}
-.plant-btn.atend{background:linear-gradient(135deg,var(--pu),#7c3aed);color:#fff;box-shadow:0 6px 20px rgba(139,92,246,.3)}
-.plant-btn.atend .plant-btn-icon{background:rgba(255,255,255,.2)} .plant-btn.atend svg{stroke:#fff}
-.prod-stat{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
-.prod-stat-item{background:var(--s2);border-radius:12px;padding:12px 14px;border:1px solid var(--bd)}
-.prod-stat-num{font-size:28px;font-weight:700;font-family:var(--m);color:var(--nv);line-height:1}
-.prod-stat-lbl{font-size:11px;color:var(--tx3);margin-top:4px;font-weight:500}
-.prod-row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd)}
-.prod-row:last-child{border-bottom:none}
-.prod-tipo{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;flex-shrink:0}
-.pt-pe{background:var(--gn-bg);color:var(--gn-dk)} .pt-ps{background:var(--bl-bg);color:var(--bl)}
-.pt-vi{background:var(--or-bg);color:var(--or)} .pt-at{background:var(--pu-bg);color:var(--pu)}
 /* Chaves no protocolo */
 .proto-key-list{display:flex;flex-direction:column;gap:5px;margin-top:4px}
 .proto-key-item{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:8px 11px;display:flex;align-items:center;justify-content:space-between}
@@ -590,10 +565,6 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
       Etiquetas
     </button>
-    <button class="tab hidden" id="tab-prod" onclick="showTab('prod',this)">
-      <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      Produção
-    </button>
     <button class="tab hidden" id="tab-vistoria" onclick="showTab('vistoria',this)">
       <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="12" y2="17"/></svg>
       Vistoria
@@ -619,21 +590,15 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
           </div>
           <div class="lerr" id="lerr">Usuário ou senha incorretos.</div>
           <button class="lbtn" onclick="doLogin()">Entrar</button>
-          <div style="display:flex;align-items:center;gap:10px;margin:4px 0">
+          <div style="display:flex;align-items:center;gap:10px;margin:2px 0">
             <div style="flex:1;height:1px;background:var(--bd)"></div>
-            <span style="font-size:11px;color:var(--tx3);font-weight:500">acesso rápido</span>
+            <span style="font-size:12px;color:var(--tx3);font-weight:500">ou</span>
             <div style="flex:1;height:1px;background:var(--bd)"></div>
           </div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <button class="l-internal-btn" onclick="openInternalAccess()">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              Acesso Corretores
-            </button>
-            <button class="l-internal-btn" style="border-color:var(--pu);color:var(--pu)" onclick="openPlantaoAccess()">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
-              Acesso Plantão
-            </button>
-          </div>
+          <button onclick="openInternalAccess()" style="width:100%;padding:12px;background:transparent;color:var(--tx2);border:1.5px solid var(--bd);border-radius:12px;font-family:var(--f);font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            Acesso Corretores
+          </button>
         </div>
       </div>
     </div>
@@ -743,25 +708,6 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
       </div>
     </div>
 
-    <!-- PRODUTIVIDADE (Gerente/Cadastro) -->
-    <div class="scr" id="scr-prod">
-      <div class="topbar" style="gap:8px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-          <div style="display:flex;align-items:center;gap:8px;flex:1">
-            <select id="prod-mes-sel" onchange="renderProd()" style="flex:1;padding:8px 10px;background:var(--s2);border:1.5px solid var(--bd);border-radius:9px;font-family:var(--f);font-size:13px;color:var(--tx);outline:none"></select>
-            <select id="prod-cor-sel" onchange="renderProd()" style="flex:1;padding:8px 10px;background:var(--s2);border:1.5px solid var(--bd);border-radius:9px;font-family:var(--f);font-size:13px;color:var(--tx);outline:none"></select>
-          </div>
-        </div>
-        <div style="display:flex;gap:7px;flex-wrap:wrap">
-          <button onclick="exportProdCSV()" style="flex:1;padding:8px;background:var(--gn-bg);color:var(--gn-dk);border:1.5px solid rgba(45,190,96,.2);border-radius:9px;font-family:var(--f);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV</button>
-          <button onclick="exportProdPDF()" style="flex:1;padding:8px;background:var(--or-bg);color:var(--or);border:1.5px solid rgba(244,122,32,.2);border-radius:9px;font-family:var(--f);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>PDF</button>
-          <button onclick="fecharMes()" style="flex:1;padding:8px;background:var(--cr-bg);color:var(--cr);border:1.5px solid rgba(229,62,62,.2);border-radius:9px;font-family:var(--f);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Fechar Mês</button>
-        </div>
-      </div>
-      <div id="prod-stats" style="padding:10px 16px 0;flex-shrink:0"></div>
-      <div id="prod-body" style="padding:6px 16px 80px;flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
-    </div>
-
     <!-- ETIQUETAS (Cadastro/ADM) -->
     <div class="scr" id="scr-etiquetas">
       <!-- TOP: seletor de chave + formulário -->
@@ -822,7 +768,6 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
               <select id="ur">
                 <option value="corretor">Corretor</option>
                 <option value="vistoria">Vistoria</option>
-                <option value="gerente">Gerente</option>
                 <option value="adm">ADM</option>
                 <option value="cadastro">Cadastro</option>
               </select>
@@ -937,59 +882,6 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
     <div class="shhd"><h2 id="meu-t">Editar Usuário</h2><button class="shcl" onclick="closeSheet('meu')"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
     <div class="shbd" id="meu-b"></div>
     <div class="shft"><button class="bs" onclick="closeSheet('meu')">Cancelar</button><button class="bp" onclick="saveUser()">Salvar</button></div>
-  </div>
-</div>
-
-<!-- ACESSO PLANTÃO -->
-<div class="plant-scr" id="plant-scr">
-  <div class="int-hdr">
-    <div class="int-hdr-in">
-      <button class="int-back" onclick="closePlantaoAccess()"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
-      <div style="flex:1">
-        <div class="int-title">Acesso Plantão</div>
-        <div class="int-sub" id="plant-sub">Selecione o corretor</div>
-      </div>
-      <button class="int-close" onclick="closePlantaoAccess()"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    </div>
-  </div>
-  <!-- Step 1: selecionar corretor -->
-  <div id="plant-step-user" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
-    <div class="int-search"><div class="sw"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="search" id="plant-q" placeholder="Buscar corretor..." oninput="renderPlantaoUsers()" autocomplete="off"></div></div>
-    <div class="lmeta" id="plant-meta" style="padding:6px 16px 2px;flex-shrink:0"></div>
-    <div class="int-list" id="plant-user-list"></div>
-  </div>
-  <!-- Step 2: 3 botões de ação -->
-  <div id="plant-step-action" style="display:none;flex-direction:column;flex:1;overflow:hidden">
-    <div class="plant-body">
-      <div id="plant-user-info" style="background:var(--s);border:1.5px solid var(--bd);border-radius:14px;padding:13px 14px;display:flex;align-items:center;gap:12px;box-shadow:var(--sh-sm);margin-bottom:4px"></div>
-      <button class="plant-btn entrada" onclick="openPlantaoForm('plantao_entrada')">
-        <div class="plant-btn-icon"><svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg></div>
-        <div class="plant-btn-txt"><div class="plant-btn-title">Entrada Plantão</div><div class="plant-btn-sub">Registrar início do plantão</div></div>
-      </button>
-      <button class="plant-btn saida" onclick="openPlantaoForm('plantao_saida')">
-        <div class="plant-btn-icon"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></div>
-        <div class="plant-btn-txt"><div class="plant-btn-title">Saída Plantão</div><div class="plant-btn-sub">Registrar fim do plantão</div></div>
-      </button>
-      <button class="plant-btn visita" onclick="openPlantaoForm('visita')">
-        <div class="plant-btn-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-        <div class="plant-btn-txt"><div class="plant-btn-title">Visita a Imóvel</div><div class="plant-btn-sub">Código do imóvel + cliente</div></div>
-      </button>
-      <button class="plant-btn atend" onclick="openPlantaoForm('atendimento')">
-        <div class="plant-btn-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
-        <div class="plant-btn-txt"><div class="plant-btn-title">Atendimento</div><div class="plant-btn-sub">Cliente na imobiliária</div></div>
-      </button>
-    </div>
-  </div>
-  <!-- Step 3: formulário do registro -->
-  <div id="plant-step-form" style="display:none;flex-direction:column;flex:1;overflow:hidden">
-    <div class="plant-body" id="plant-form-body"></div>
-    <div style="padding:12px 16px;border-top:1px solid var(--bd);display:flex;gap:8px;background:var(--s)">
-      <button class="bs" onclick="backToPlantaoAction()">Voltar</button>
-      <button class="bp" style="flex:1" onclick="confirmarPlantao()">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-        Confirmar
-      </button>
-    </div>
   </div>
 </div>
 
@@ -1170,7 +1062,6 @@ function defaultUsers() {
     { id:"u_adm",      name:"ADM",           user:"adm",      pass:"adm@2024",  role:"adm" },
     { id:"u_corretor", name:"Corretor",      user:"corretor", pass:"cor@2024",  role:"corretor" },
     { id:"u_vistoria",  name:"Vistoria",       user:"vistoria",  pass:"vis@2024",  role:"vistoria"  },
-    { id:"u_gerente",   name:"Gerente",         user:"gerente",   pass:"ger@2024",  role:"gerente"   },
   ];
 }
 function defaultKeys() {
@@ -1386,12 +1277,11 @@ function deleteFoto(url) {
 // PERMISSIONS
 // ══════════════════════════════════════════
 const PERMS = {
-  interno:  { viewKeys:true, editKey:false, addKey:false, deleteKey:false, genPDF:false, signature:false, manageUsers:false, viewAdmin:false, viewConfig:false, quickMove:false, vistoria:false, interno:true,  prod:false },
-  corretor: { viewKeys:true, editKey:false, addKey:false, deleteKey:false, genPDF:false, signature:false, manageUsers:false, viewAdmin:false, viewConfig:false, quickMove:true,  vistoria:false, prod:false },
-  vistoria: { viewKeys:true, editKey:false, addKey:false, deleteKey:false, genPDF:false, signature:true,  manageUsers:false, viewAdmin:false, viewConfig:false, quickMove:true,  vistoria:true,  prod:false },
-  gerente:  { viewKeys:true, editKey:false, addKey:false, deleteKey:false, genPDF:false, signature:false, manageUsers:false, viewAdmin:false, viewConfig:false, quickMove:true,  vistoria:false, prod:true  },
-  adm:      { viewKeys:true, editKey:true,  addKey:true,  deleteKey:true,  genPDF:true,  signature:true,  manageUsers:false, viewAdmin:true,  viewConfig:true,  quickMove:true,  vistoria:false, prod:false },
-  cadastro: { viewKeys:true, editKey:true,  addKey:true,  deleteKey:true,  genPDF:true,  signature:true,  manageUsers:true,  viewAdmin:true,  viewConfig:true,  quickMove:true,  vistoria:false, prod:true  },
+  interno:  { viewKeys:true, editKey:false, addKey:false, deleteKey:false, genPDF:false, signature:false, manageUsers:false, viewAdmin:false, viewConfig:false, quickMove:false, vistoria:false, interno:true },
+  corretor: { viewKeys:true, editKey:false, addKey:false, deleteKey:false, genPDF:false, signature:false, manageUsers:false, viewAdmin:false, viewConfig:false, quickMove:true,  vistoria:false },
+  vistoria: { viewKeys:true, editKey:false, addKey:false, deleteKey:false, genPDF:false, signature:true,  manageUsers:false, viewAdmin:false, viewConfig:false, quickMove:true,  vistoria:true  },
+  adm:      { viewKeys:true, editKey:true,  addKey:true,  deleteKey:true,  genPDF:true,  signature:true,  manageUsers:false, viewAdmin:true,  viewConfig:true,  quickMove:true,  vistoria:false },
+  cadastro: { viewKeys:true, editKey:true,  addKey:true,  deleteKey:true,  genPDF:true,  signature:true,  manageUsers:true,  viewAdmin:true,  viewConfig:true,  quickMove:true,  vistoria:false },
 };
 function can(perm) { return session && (PERMS[session.role]?.[perm] === true); }
 
@@ -1464,7 +1354,6 @@ async function initApp() {
   document.getElementById("tab-usuarios").classList.toggle("hidden", !can("manageUsers"));
   document.getElementById("tab-vistoria").classList.toggle("hidden", !can("vistoria"));
   document.getElementById("tab-etiquetas").classList.toggle("hidden", !can("manageUsers"));
-  document.getElementById("tab-prod").classList.toggle("hidden", !can("prod"));
   // Modo interno: label especial no user-pill
   if(session?.role==="interno") {
     document.getElementById("user-label").textContent = "Acesso Corretores · Sair";
@@ -1480,7 +1369,6 @@ async function initApp() {
   renderList();
   if(can("viewAdmin")) { renderGer(); renderGHist(); }
   if(can("manageUsers")) renderUsers();
-  if(can("prod")) loadProd().then(()=>renderProd());
   setTimeout(updateNotifBar, 1200);
   // Agendar verificação de vencidos para o próximo meio-dia
   scheduleOverdueCheck();
@@ -2036,9 +1924,9 @@ function changePwd(){
 // ══════════════════════════════════════════
 // USERS (Cadastro only)
 // ══════════════════════════════════════════
-const ROLE_NAMES={cadastro:"Cadastro",adm:"ADM",corretor:"Corretor",vistoria:"Vistoria",gerente:"Gerente",interno:"Interno"};
-const ROLE_ORDER=["cadastro","adm","gerente","corretor","vistoria"];
-const ROLE_DESC={cadastro:"Acesso total",adm:"Gerenciamento operacional",gerente:"Produtividade e chaves",corretor:"Movimentações rápidas",vistoria:"Vistoria e comprovantes"};
+const ROLE_NAMES={cadastro:"Cadastro",adm:"ADM",corretor:"Corretor",vistoria:"Vistoria"};
+const ROLE_ORDER=["cadastro","adm","corretor","vistoria"];
+const ROLE_DESC={cadastro:"Acesso total",adm:"Gerenciamento operacional",corretor:"Movimentações rápidas",vistoria:"Vistoria e comprovantes"};
 
 function renderUsers(){
   const el=document.getElementById("users-list");
@@ -2514,7 +2402,6 @@ function showTab(id,btn){
   if(id==="usuarios") renderUsers();
   if(id==="vistoria") setTimeout(visInitSig,100);
   if(id==="etiquetas"){ etqFila=[]; etqRenderFila(); etqKeySelected=null; }
-  if(id==="prod"){ loadProd().then(()=>renderProd()); }
 }
 // ══════════════════════════════════════════
 // MOVIMENTAÇÃO RÁPIDA — Retirar / Devolver
@@ -2896,299 +2783,6 @@ function etqGetQRDataURL(text, size=80) {
 }
 
 // ══════════════════════════════════════════
-// PRODUTIVIDADE — helpers Supabase
-// ══════════════════════════════════════════
-let prodData = []; // cache local
-
-async function saveProd(entry) {
-  prodData.unshift(entry);
-  if(SUPA_URL && SUPA_KEY) {
-    await sbFetch("produtividade","POST",[entry]).catch(e=>console.warn("[prod]",e));
-  }
-  localStorage.setItem("acrc_prod", JSON.stringify(prodData.slice(0,2000)));
-}
-
-async function loadProd() {
-  // Load from Supabase
-  if(SUPA_URL && SUPA_KEY) {
-    const rows = await sbFetch("produtividade","GET",null,"?select=*&order=ts.desc&limit=1000").catch(()=>null);
-    if(rows && rows.length) {
-      prodData = rows;
-      localStorage.setItem("acrc_prod", JSON.stringify(prodData));
-      return;
-    }
-  }
-  // Fallback local
-  try { prodData = JSON.parse(localStorage.getItem("acrc_prod"))||[]; } catch(e){ prodData=[]; }
-}
-
-function getMesAtual() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-}
-function fmtMes(m) {
-  const [y,mo] = m.split('-');
-  const nomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  return `${nomes[parseInt(mo)-1]}/${y}`;
-}
-function tipoLabel(t) {
-  return {plantao_entrada:'Entrada Plantão',plantao_saida:'Saída Plantão',visita:'Visita',atendimento:'Atendimento'}[t]||t;
-}
-function tipoClass(t) {
-  return {plantao_entrada:'pt-pe',plantao_saida:'pt-ps',visita:'pt-vi',atendimento:'pt-at'}[t]||'pt-pe';
-}
-
-// ══════════════════════════════════════════
-// ACESSO PLANTÃO
-// ══════════════════════════════════════════
-let _plantaoUser = null;
-let _plantaoTipo = null;
-
-function openPlantaoAccess() {
-  _plantaoUser = null; _plantaoTipo = null;
-  document.getElementById('plant-sub').textContent = 'Selecione o corretor';
-  document.getElementById('plant-q').value = '';
-  showPlantStep('user');
-  document.getElementById('plant-scr').classList.add('open');
-  renderPlantaoUsers();
-}
-function closePlantaoAccess() {
-  document.getElementById('plant-scr').classList.remove('open');
-  _plantaoUser = null; _plantaoTipo = null;
-}
-
-function showPlantStep(step) {
-  ['user','action','form'].forEach(s => {
-    const el = document.getElementById(`plant-step-${s}`);
-    if(el) el.style.display = s===step ? 'flex' : 'none';
-  });
-}
-
-function renderPlantaoUsers() {
-  const q = (document.getElementById('plant-q')?.value||'').trim().toLowerCase();
-  const el = document.getElementById('plant-user-list');
-  const meta = document.getElementById('plant-meta');
-  const eligible = users
-    .filter(u => (u.role==='corretor'||u.role==='gerente'||u.role==='vistoria')
-      && (!q || u.name.toLowerCase().includes(q) || u.user.toLowerCase().includes(q)))
-    .sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
-  const RC = {corretor:'#3B82F6',vistoria:'#2DBE60',gerente:'#8B5CF6',adm:'#F47A20',cadastro:'#11284A'};
-  if(meta) meta.textContent = eligible.length ? `${eligible.length} corretor${eligible.length>1?'es':''}` : '';
-  if(!eligible.length){
-    el.innerHTML=`<div style="text-align:center;padding:40px 20px;color:var(--tx3);font-size:13px"><div style="font-size:32px;margin-bottom:10px">🔍</div>Nenhum usuário encontrado.</div>`;
-    return;
-  }
-  el.innerHTML = eligible.map(u => {
-    const words = u.name.trim().split(' ');
-    const initials = words.length>=2 ? (words[0][0]+words[words.length-1][0]).toUpperCase() : u.name.slice(0,2).toUpperCase();
-    const idx = users.indexOf(u);
-    return `<div class="int-ucard">
-      <div class="int-uavatar" style="background:${RC[u.role]||'#11284A'}">${initials}</div>
-      <div style="flex:1;min-width:0"><div class="int-uname">${u.name}</div><div class="int-urole">${ROLE_NAMES[u.role]||u.role}</div></div>
-      <button class="int-selbtn" onclick="selectPlantaoUser(${idx})">Selecionar</button>
-    </div>`;
-  }).join('');
-}
-
-function selectPlantaoUser(idx) {
-  const u = users[idx]; if(!u) return;
-  _plantaoUser = u;
-  document.getElementById('plant-sub').textContent = u.name;
-  // Render user info card
-  const RC = {corretor:'#3B82F6',vistoria:'#2DBE60',gerente:'#8B5CF6',adm:'#F47A20',cadastro:'#11284A'};
-  const words = u.name.trim().split(' ');
-  const initials = words.length>=2 ? (words[0][0]+words[words.length-1][0]).toUpperCase() : u.name.slice(0,2).toUpperCase();
-  document.getElementById('plant-user-info').innerHTML = `
-    <div style="width:40px;height:40px;border-radius:50%;background:${RC[u.role]};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#fff;flex-shrink:0">${initials}</div>
-    <div style="flex:1"><div style="font-size:14px;font-weight:600;color:var(--tx)">${u.name}</div><div style="font-size:12px;color:var(--tx3)">${ROLE_NAMES[u.role]||u.role}</div></div>
-    <button onclick="showPlantStep('user')" style="font-size:12px;color:var(--bl);background:var(--bl-bg);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-family:var(--f);font-weight:500">Trocar</button>`;
-  showPlantStep('action');
-}
-
-function openPlantaoForm(tipo) {
-  _plantaoTipo = tipo;
-  const formEl = document.getElementById('plant-form-body');
-  const needImovel = tipo==='visita';
-  const needCliente = tipo==='visita'||tipo==='atendimento';
-  formEl.innerHTML = `
-    <div style="font-size:16px;font-weight:700;color:var(--tx);margin-bottom:4px">${tipoLabel(tipo)}</div>
-    <div style="font-size:13px;color:var(--tx3);margin-bottom:16px">${_plantaoUser?.name} · ${new Date().toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>
-    ${needImovel?`<div class="fld" style="margin-bottom:12px"><label>Código do Imóvel</label><input id="pf-imovel" placeholder="Ex: AP10353" autocomplete="off" style="font-family:var(--m);font-size:16px;font-weight:600;text-transform:uppercase"></div>`:''}
-    ${needCliente?`<div class="fld" style="margin-bottom:12px"><label>Nome do Cliente</label><input id="pf-cliente" placeholder="Nome completo" autocomplete="off"></div><div class="fld"><label>Contato</label><input id="pf-contato" placeholder="Telefone ou e-mail" autocomplete="off"></div>`:''}
-    ${!needImovel&&!needCliente?`<div style="background:var(--s2);border-radius:12px;padding:16px;text-align:center;color:var(--tx2);font-size:13px">Toque em Confirmar para registrar ${tipoLabel(tipo).toLowerCase()}.</div>`:''}`;
-  showPlantStep('form');
-  if(needImovel) setTimeout(()=>document.getElementById('pf-imovel')?.focus(), 200);
-  else if(needCliente) setTimeout(()=>document.getElementById('pf-cliente')?.focus(), 200);
-}
-function backToPlantaoAction() { showPlantStep('action'); }
-
-async function confirmarPlantao() {
-  if(!_plantaoUser||!_plantaoTipo) return;
-  const imovel = document.getElementById('pf-imovel')?.value?.trim()||'';
-  const cliente = document.getElementById('pf-cliente')?.value?.trim()||'';
-  const contato = document.getElementById('pf-contato')?.value?.trim()||'';
-  if((_plantaoTipo==='visita')&&!imovel){toast("Preencha o código do imóvel",true);return;}
-  if((_plantaoTipo==='visita'||_plantaoTipo==='atendimento')&&!cliente){toast("Preencha o nome do cliente",true);return;}
-  const now = new Date();
-  const entry = {
-    id: Date.now(),
-    tipo: _plantaoTipo,
-    corretor: _plantaoUser.name,
-    corretor_id: _plantaoUser.id,
-    cliente, contato, imovel,
-    ts: now.toISOString(),
-    mes: getMesAtual(),
-    data_fmt: now.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
-  };
-  await saveProd(entry);
-  closePlantaoAccess();
-  // Tela de confirmação
-  showConfirmation('plantao', tipoLabel(_plantaoTipo),
-    _plantaoUser.name,
-    now.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}),
-    cliente||imovel||'');
-  _plantaoUser = null; _plantaoTipo = null;
-}
-
-// ══════════════════════════════════════════
-// DASHBOARD PRODUTIVIDADE
-// ══════════════════════════════════════════
-async function renderProd() {
-  if(!prodData.length) await loadProd();
-  const mesSel = document.getElementById('prod-mes-sel')?.value || getMesAtual();
-  const corSel = document.getElementById('prod-cor-sel')?.value || 'todos';
-
-  // Build mes options
-  const meses = [...new Set(prodData.map(r=>r.mes))].sort().reverse();
-  const mesEl = document.getElementById('prod-mes-sel');
-  if(mesEl && mesEl.options.length===0) {
-    const allMeses = [...new Set([getMesAtual(),...meses])].sort().reverse();
-    allMeses.forEach(m => { const o=document.createElement('option');o.value=m;o.textContent=fmtMes(m);mesEl.appendChild(o); });
-  }
-
-  // Build corretor options
-  const corEl = document.getElementById('prod-cor-sel');
-  if(corEl && corEl.options.length===0) {
-    const opt0=document.createElement('option');opt0.value='todos';opt0.textContent='Todos os corretores';corEl.appendChild(opt0);
-    const cors=[...new Set(prodData.map(r=>r.corretor))].sort();
-    cors.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;corEl.appendChild(o);});
-  }
-
-  const filtered = prodData.filter(r =>
-    r.mes===mesSel && (corSel==='todos'||r.corretor===corSel)
-  );
-
-  // Stats
-  const stats = {plantao_entrada:0,plantao_saida:0,visita:0,atendimento:0};
-  filtered.forEach(r=>{ if(stats[r.tipo]!==undefined) stats[r.tipo]++; });
-  const statsEl = document.getElementById('prod-stats');
-  if(statsEl) statsEl.innerHTML = `<div class="prod-stat">
-    <div class="prod-stat-item"><div class="prod-stat-num">${stats.plantao_entrada}</div><div class="prod-stat-lbl">Entradas Plantão</div></div>
-    <div class="prod-stat-item"><div class="prod-stat-num">${stats.plantao_saida}</div><div class="prod-stat-lbl">Saídas Plantão</div></div>
-    <div class="prod-stat-item"><div class="prod-stat-num">${stats.visita}</div><div class="prod-stat-lbl">Visitas</div></div>
-    <div class="prod-stat-item"><div class="prod-stat-num">${stats.atendimento}</div><div class="prod-stat-lbl">Atendimentos</div></div>
-  </div>`;
-
-  // List
-  const el = document.getElementById('prod-body');
-  if(!filtered.length){el.innerHTML=`<div style="text-align:center;padding:32px;color:var(--tx3);font-size:13px">Nenhum registro neste período.</div>`;return;}
-  el.innerHTML = filtered.map(r=>`<div style="background:var(--s);border:1.5px solid var(--bd);border-radius:12px;padding:11px 13px;box-shadow:var(--sh-sm)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
-      <span class="prod-tipo ${tipoClass(r.tipo)}">${tipoLabel(r.tipo)}</span>
-      <span style="font-size:11px;color:var(--tx3)">${r.data_fmt}</span>
-    </div>
-    <div style="font-size:13px;font-weight:600;color:var(--tx)">${r.corretor}</div>
-    ${r.imovel?`<div style="font-size:12px;color:var(--tx2);margin-top:2px">Imóvel: <span style="font-family:var(--m);font-weight:600">${r.imovel}</span></div>`:''}
-    ${r.cliente?`<div style="font-size:12px;color:var(--tx2)">Cliente: ${r.cliente}${r.contato?' · '+r.contato:''}</div>`:''}
-  </div>`).join('');
-}
-
-function exportProdCSV() {
-  const mesSel = document.getElementById('prod-mes-sel')?.value||getMesAtual();
-  const corSel = document.getElementById('prod-cor-sel')?.value||'todos';
-  const filtered = prodData.filter(r=>r.mes===mesSel&&(corSel==='todos'||r.corretor===corSel));
-  if(!filtered.length){toast("Sem dados para exportar",true);return;}
-  const rows=[['Data/Hora','Tipo','Corretor','Imóvel','Cliente','Contato'],...filtered.map(r=>[r.data_fmt,tipoLabel(r.tipo),r.corretor,r.imovel||'',r.cliente||'',r.contato||''])];
-const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,﻿'+encodeURIComponent(csv);
-  a.download=`Produtividade_${fmtMes(mesSel).replace('/','_')}.csv`;a.click();
-  toast("CSV exportado!");
-}
-
-async function exportProdPDF() {
-  const mesSel = document.getElementById('prod-mes-sel')?.value||getMesAtual();
-  const corSel = document.getElementById('prod-cor-sel')?.value||'todos';
-  const filtered = prodData.filter(r=>r.mes===mesSel&&(corSel==='todos'||r.corretor===corSel));
-  if(!filtered.length){toast("Sem dados para exportar",true);return;}
-  toast("Gerando PDF...");
-  const {jsPDF}=window.jspdf;
-  const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
-  const PW=210, MARGIN=14;
-  // Header
-  doc.setFillColor(17,40,74);doc.rect(0,0,PW,28,"F");
-  doc.setFillColor(244,122,32);doc.rect(0,24,PW,4,"F");
-  doc.setTextColor(255,255,255);doc.setFont("helvetica","bold");doc.setFontSize(14);
-  doc.text("ACRC Imóveis — Relatório de Produtividade",MARGIN,10);
-  doc.setFont("helvetica","normal");doc.setFontSize(8.5);
-  doc.text(`${fmtMes(mesSel)} · ${corSel==='todos'?'Todos os corretores':corSel} · Gerado em ${new Date().toLocaleDateString('pt-BR')}`,MARGIN,17);
-  // Stats por corretor
-  const cors = corSel==='todos' ? [...new Set(filtered.map(r=>r.corretor))].sort() : [corSel];
-  let y=36;
-  cors.forEach(cor=>{
-    const rows=filtered.filter(r=>r.corretor===cor);
-    const ent=rows.filter(r=>r.tipo==='plantao_entrada').length;
-    const sai=rows.filter(r=>r.tipo==='plantao_saida').length;
-    const vis=rows.filter(r=>r.tipo==='visita').length;
-    const ate=rows.filter(r=>r.tipo==='atendimento').length;
-    if(y>260){doc.addPage();y=20;}
-    doc.setFillColor(240,242,246);doc.roundedRect(MARGIN,y,PW-MARGIN*2,10,2,2,"F");
-    doc.setFont("helvetica","bold");doc.setFontSize(10);doc.setTextColor(17,40,74);
-    doc.text(cor,MARGIN+3,y+7);
-    doc.setFontSize(8.5);doc.setFont("helvetica","normal");doc.setTextColor(80,80,80);
-    doc.text(`Entradas: ${ent}  Saídas: ${sai}  Visitas: ${vis}  Atendimentos: ${ate}`,MARGIN+3,y+14);
-    y+=18;
-    rows.forEach(r=>{
-      if(y>275){doc.addPage();y=20;}
-      const colors={plantao_entrada:[37,122,53],plantao_saida:[26,86,160],visita:[244,122,32],atendimento:[139,92,246]};
-      const c=colors[r.tipo]||[80,80,80];
-      doc.setFillColor(c[0],c[1],c[2]);doc.roundedRect(MARGIN,y,22,5,1,1,"F");
-      doc.setTextColor(255,255,255);doc.setFontSize(6.5);doc.setFont("helvetica","bold");
-      doc.text(tipoLabel(r.tipo).slice(0,12),MARGIN+1,y+3.5);
-      doc.setTextColor(25,25,23);doc.setFont("helvetica","normal");doc.setFontSize(8);
-      doc.text(r.data_fmt,MARGIN+24,y+3.5);
-      if(r.imovel) doc.text(`Imóvel: ${r.imovel}`,MARGIN+70,y+3.5);
-      if(r.cliente) doc.text(`${r.cliente}${r.contato?' · '+r.contato:''}`,MARGIN+105,y+3.5);
-      y+=7;
-    });
-    y+=4;
-  });
-  // Footer
-  doc.setFillColor(17,40,74);doc.rect(0,287,PW,10,"F");
-  doc.setTextColor(255,255,255);doc.setFontSize(7.5);doc.setFont("helvetica","normal");
-  doc.text("ACRC Imóveis · Blumenau/SC · acrcimoveis.com.br",PW/2,293,{align:"center"});
-  doc.save(`Produtividade_${fmtMes(mesSel).replace('/','_')}.pdf`);
-  toast("PDF gerado!");
-}
-
-async function fecharMes() {
-  const mesSel = document.getElementById('prod-mes-sel')?.value||getMesAtual();
-  if(!confirm(`Fechar o mês ${fmtMes(mesSel)}? Os dados serão arquivados.`)) return;
-  // Exporta CSV automaticamente antes de fechar
-  exportProdCSV();
-  // Apaga do Supabase
-  if(SUPA_URL&&SUPA_KEY) await sbFetch("produtividade","DELETE",null,`?mes=eq.${mesSel}`).catch(()=>{});
-  prodData = prodData.filter(r=>r.mes!==mesSel);
-  localStorage.setItem("acrc_prod",JSON.stringify(prodData));
-  // Rebuild selectors
-  const mesEl=document.getElementById('prod-mes-sel');
-  const corEl=document.getElementById('prod-cor-sel');
-  if(mesEl){while(mesEl.options.length)mesEl.remove(0);}
-  if(corEl){while(corEl.options.length)corEl.remove(0);}
-  renderProd();
-  toast(`Mês ${fmtMes(mesSel)} fechado e exportado!`);
-}
-
-// ══════════════════════════════════════════
 // ACESSO INTERNO — login rápido (sem senha)
 // ══════════════════════════════════════════
 function openInternalAccess() {
@@ -3440,35 +3034,24 @@ async function confirmarDevolucaoInterna() {
 // ══════════════════════════════════════════
 // CONFIRMAÇÃO PREMIUM
 // ══════════════════════════════════════════
-function showConfirmation(type, loc, user, datetime, extra='') {
+function showConfirmation(type, loc, user, datetime) {
   const ov = document.getElementById('conf-ov');
   const icon = document.getElementById('conf-icon');
   const svg = document.getElementById('conf-svg');
-  icon.classList.remove('ret','dev','plant');
-  const isProd = type==='plantao';
-  const isRet = type==='retirada';
-  if(isProd){
-    icon.classList.add('ret'); // laranja
-    svg.innerHTML='<polyline points="20 6 9 17 4 12"/>';
-    document.getElementById('conf-title').textContent='Registro Confirmado!';
-    document.getElementById('conf-sub').innerHTML=`<strong>${loc}</strong> registrado por<br><strong>${user}</strong>`;
-    document.getElementById('conf-info').innerHTML=`
-      <div class="conf-info-row"><span class="conf-label">Tipo</span><span class="conf-val">${loc}</span></div>
-      <div class="conf-info-row"><span class="conf-label">Corretor</span><span class="conf-val">${user}</span></div>
-      ${extra?`<div class="conf-info-row"><span class="conf-label">Referência</span><span class="conf-val">${extra}</span></div>`:''}
-      <div class="conf-info-row"><span class="conf-label">Data / Hora</span><span class="conf-val">${datetime}</span></div>`;
-  } else {
-    icon.classList.add(isRet ? 'ret' : 'dev');
-    svg.innerHTML = isRet
-      ? '<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>'
-      : '<polyline points="20 6 9 17 4 12"/>';
-    document.getElementById('conf-title').textContent = isRet ? 'Chave Retirada!' : 'Chave Devolvida!';
-    document.getElementById('conf-sub').innerHTML = `A chave <strong>${loc}</strong> foi ${isRet?'retirada':'devolvida'} por<br><strong>${user}</strong>`;
-    document.getElementById('conf-info').innerHTML = `
-      <div class="conf-info-row"><span class="conf-label">Chave</span><span class="conf-val">${loc}</span></div>
-      <div class="conf-info-row"><span class="conf-label">${isRet?'Retirada por':'Devolvida por'}</span><span class="conf-val">${user}</span></div>
-      <div class="conf-info-row"><span class="conf-label">Data / Hora</span><span class="conf-val">${datetime}</span></div>`;
-  }
+  const isRet = type === 'retirada';
+  // Remove old type classes
+  icon.classList.remove('ret','dev');
+  icon.classList.add(isRet ? 'ret' : 'dev');
+  svg.innerHTML = isRet
+    ? '<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>'
+    : '<polyline points="20 6 9 17 4 12"/>';
+  document.getElementById('conf-title').textContent = isRet ? 'Chave Retirada!' : 'Chave Devolvida!';
+  document.getElementById('conf-sub').innerHTML = `A chave <strong>${loc}</strong> foi ${isRet?'retirada':'devolvida'} por<br><strong>${user}</strong>`;
+  document.getElementById('conf-info').innerHTML = `
+    <div class="conf-info-row"><span class="conf-label">Chave</span><span class="conf-val">${loc}</span></div>
+    <div class="conf-info-row"><span class="conf-label">${isRet?'Retirada por':'Devolvida por'}</span><span class="conf-val">${user}</span></div>
+    <div class="conf-info-row"><span class="conf-label">Data / Hora</span><span class="conf-val">${datetime}</span></div>`;
+  // Close any open sheets first
   document.querySelectorAll('.bkdp.open').forEach(b=>b.classList.remove('open'));
   ov.classList.add('open');
 }
