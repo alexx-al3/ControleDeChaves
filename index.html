@@ -1525,7 +1525,7 @@ function openKey(idx) {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       ${[["Localização",`<span style="font-family:var(--m);font-weight:600">${k.loc}</span>`],["Status",`<span class="bdg b${bc(k.status)}">${bl(k.status)}</span>`],["Código",k.codigo||"—"],["Responsável",k.responsavel||"—"],["Data saída",fd(k.dataRet)],["Devolução",fd(k.dataDev)]].map(([l,v])=>`<div style="background:var(--s2);border-radius:8px;padding:9px 11px"><div style="font-size:10.5px;color:var(--tx3);margin-bottom:2px">${l}</div><div style="font-size:13px;font-weight:500">${v}</div></div>`).join("")}
       ${k.endereco?`<div style="background:var(--s2);border-radius:8px;padding:9px 11px;grid-column:1/-1;border-left:3px solid var(--or)"><div style="font-size:10.5px;color:var(--tx3);margin-bottom:2px">Endereço</div><div style="font-size:13px;font-weight:500">${k.endereco}</div></div>`:""}
-      ${k.endereco?`<div style="background:var(--s2);border-radius:8px;padding:9px 11px;grid-column:1/-1"><div style="font-size:10.5px;color:var(--tx3);margin-bottom:2px">Endereço</div><div style="font-size:13px;font-weight:500">${k.endereco}</div></div>`:""}
+
       ${k.obs?`<div style="background:var(--s2);border-radius:8px;padding:9px 11px;grid-column:1/-1"><div style="font-size:10.5px;color:var(--tx3);margin-bottom:2px">Observações</div><div style="font-size:13px">${k.obs}</div></div>`:""}
     </div>
     ${histHTML}`;
