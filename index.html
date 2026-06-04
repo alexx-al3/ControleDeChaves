@@ -1493,7 +1493,7 @@ let curF = "todos";
 function setF(f,btn) { curF=f; document.querySelectorAll(".topbar .chip").forEach(c=>c.classList.remove("active")); btn.classList.add("active"); renderList(); }
 function renderList() {
   const q = (document.getElementById("lq")?.value||"").trim().toLowerCase();
-  const filtered = keys.filter(k => (!q||k.loc.toLowerCase().includes(q)||k.codigo.toLowerCase().includes(q)||k.responsavel.toLowerCase().includes(q)) && (curF==="todos"||k.status===curF));
+  const filtered = keys.filter(k => (!q||k.loc.toLowerCase().includes(q)||k.codigo.toLowerCase().includes(q)||k.responsavel.toLowerCase().includes(q)||(k.endereco||"").toLowerCase().includes(q)) && (curF==="todos"||k.status===curF));
   document.getElementById("lmeta").textContent = `${filtered.length} de ${keys.length} chaves`;
   const indisp = keys.filter(k=>k.status==="INDISPONÍVEL").length;
   const b = document.getElementById("bdg"); b.textContent=indisp||""; b.classList.toggle("show",indisp>0);
@@ -1501,7 +1501,7 @@ function renderList() {
   if(!filtered.length) { el.innerHTML=`<div class="empty"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><p>Nenhuma chave encontrada.</p></div>`; return; }
   el.innerHTML = filtered.map(k => {
     const idx=keys.indexOf(k), c=bc(k.status);
-    const sub=k.codigo&&k.responsavel?`${k.codigo} · ${k.responsavel}`:k.codigo||k.responsavel||(k.dataRet?`Saída: ${fd(k.dataRet)}`:"");
+    const sub=k.status==="INDISPONÍVEL"&&k.responsavel?`${k.codigo?k.codigo+" · ":""}${k.responsavel}`:k.endereco?`${k.codigo?k.codigo+" · ":""}${k.endereco}`:k.codigo||(k.dataRet?`Saída: ${fd(k.dataRet)}`:"");
     const thumb = k.foto ? `<img class="kthumb" src="${k.foto}" alt="">` : `<div class="kicon ki-${c}">${IK}</div>`;
     return `<div class="kcard" onclick="openKey(${idx})">${thumb}<div class="kinf"><div class="kloc">${k.loc}</div><div class="ksub">${sub||bl(k.status)}</div></div><span class="bdg b${c}">${bl(k.status)}</span>${IC}</div>`;
   }).join("");
@@ -1524,6 +1524,8 @@ function openKey(idx) {
     ${k.foto?`<img src="${k.foto}" style="width:100%;height:140px;object-fit:cover;border-radius:10px;border:1px solid var(--bd);cursor:zoom-in" onclick="openFotoFullscreen('${k.foto}')" title="Toque para ampliar">`:""} 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       ${[["Localização",`<span style="font-family:var(--m);font-weight:600">${k.loc}</span>`],["Status",`<span class="bdg b${bc(k.status)}">${bl(k.status)}</span>`],["Código",k.codigo||"—"],["Responsável",k.responsavel||"—"],["Data saída",fd(k.dataRet)],["Devolução",fd(k.dataDev)]].map(([l,v])=>`<div style="background:var(--s2);border-radius:8px;padding:9px 11px"><div style="font-size:10.5px;color:var(--tx3);margin-bottom:2px">${l}</div><div style="font-size:13px;font-weight:500">${v}</div></div>`).join("")}
+      ${k.endereco?`<div style="background:var(--s2);border-radius:8px;padding:9px 11px;grid-column:1/-1;border-left:3px solid var(--or)"><div style="font-size:10.5px;color:var(--tx3);margin-bottom:2px">Endereço</div><div style="font-size:13px;font-weight:500">${k.endereco}</div></div>`:""}
+      ${k.endereco?`<div style="background:var(--s2);border-radius:8px;padding:9px 11px;grid-column:1/-1"><div style="font-size:10.5px;color:var(--tx3);margin-bottom:2px">Endereço</div><div style="font-size:13px;font-weight:500">${k.endereco}</div></div>`:""}
       ${k.obs?`<div style="background:var(--s2);border-radius:8px;padding:9px 11px;grid-column:1/-1"><div style="font-size:10.5px;color:var(--tx3);margin-bottom:2px">Observações</div><div style="font-size:13px">${k.obs}</div></div>`:""}
     </div>
     ${histHTML}`;
@@ -1828,7 +1830,7 @@ function renderGHist() {
 
   // Filter keys by search and status chip
   const filtered=keys.filter(k=>{
-    const mq=!q||k.loc.toLowerCase().includes(q)||k.codigo.toLowerCase().includes(q)||k.responsavel.toLowerCase().includes(q);
+    const mq=!q||k.loc.toLowerCase().includes(q)||k.codigo.toLowerCase().includes(q)||k.responsavel.toLowerCase().includes(q)||(k.endereco||"").toLowerCase().includes(q);
     const mf=curHStatus==="todos"||k.status===curHStatus;
     return mq&&mf;
   });
@@ -2394,8 +2396,8 @@ async function gerarPDF(){
 // CSV EXPORT
 // ══════════════════════════════════════════
 function exportCSV(){
-  const rows=[["Localização","Código","Status","Responsável","Data Saída","Data Devolução","Obs"]];
-  keys.forEach(k=>rows.push([k.loc,k.codigo,k.status,k.responsavel,k.dataRet,k.dataDev,k.obs]));
+  const rows=[["Localização","Código","Status","Responsável","Data Saída","Data Devolução","Obs","Endereço"]];
+  keys.forEach(k=>rows.push([k.loc,k.codigo,k.status,k.responsavel,k.dataRet,k.dataDev,k.obs,k.endereco||""]));
   const csv=rows.map(r=>r.map(v=>`"${(v||"").replace(/"/g,'""')}"`).join(",")).join("\n");
   const a=document.createElement("a");a.href="data:text/csv;charset=utf-8,\uFEFF"+encodeURIComponent(csv);a.download=`ACRC_${new Date().toISOString().slice(0,10)}.csv`;a.click();toast("CSV exportado");
 }
@@ -2602,6 +2604,14 @@ function etqSelectKey(loc) {
   document.getElementById("etq-key-results").style.display = "none";
   document.getElementById("etq-selected-info").style.display = "block";
   document.getElementById("etq-selected-info").textContent = `✅ Chave selecionada: ${k.loc}${k.codigo ? " · " + k.codigo : ""}`;
+  // Preencher endereço automaticamente se a chave tiver
+  if(k.endereco) {
+    document.getElementById("etq-endereco").value = k.endereco;
+  }
+  // Preencher código automaticamente
+  if(k.codigo) {
+    // etq-edificio fica em branco — cada imóvel pode ter nome diferente
+  }
 }
 
 function etqPreviewQR() {
