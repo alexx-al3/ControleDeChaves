@@ -838,6 +838,7 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
       </div>
       <div class="fld"><label>Nome e Relação</label><input id="pnome" placeholder="Ex: João Silva — Proprietário"></div>
       <div class="fld"><label>CPF / RG (opcional)</label><input id="pcpf" placeholder="000.000.000-00"></div>
+      <div class="fld"><label>Telefone (opcional)</label><input id="ptel" placeholder="(47) 99999-9999" type="tel"></div>
       <div class="fld"><label>Tipo de saída</label>
         <div class="sgrid">
           <button class="sbtn sel" data-s="TEMPORÁRIA" onclick="selS(this)">⏳ Temporária</button>
@@ -1010,16 +1011,16 @@ async function sbFetch(table, method="GET", body=null, query="") {
 // key obj → supabase row
 // foto: envia URL se disponível; base64 curto (<50KB) vai como fallback
 function keyToRow(k) {
-  // Aceita URL do Storage ou base64 comprimido (até 200KB)
   let fotoVal = "";
   if(k.foto && k.foto.startsWith("http")) {
-    fotoVal = k.foto; // URL do Storage
+    fotoVal = k.foto;
   } else if(k.foto && k.foto.startsWith("data:") && k.foto.length < 204800) {
-    fotoVal = k.foto; // base64 comprimido — garantia de persistência
+    fotoVal = k.foto;
   }
   return { id:k.id, loc:k.loc, codigo:k.codigo||"", status:k.status||"LIVRE",
     responsavel:k.responsavel||"", data_ret:k.dataRet||"", data_dev:k.dataDev||"",
-    obs:k.obs||"", foto:fotoVal, updated_at: new Date().toISOString() };
+    obs:k.obs||"", foto:fotoVal, endereco:k.endereco||"",
+    updated_at: new Date().toISOString() };
 }
 function rowToKey(r) {
   // Ao carregar do Supabase, verificar se há foto local mais recente (b64)
@@ -1030,7 +1031,7 @@ function rowToKey(r) {
   if(!foto && localKey?.foto) foto = localKey.foto; // recupera b64 local se Supabase não tem
   return { id:r.id, loc:r.loc, codigo:r.codigo||"", status:r.status||"LIVRE",
     responsavel:r.responsavel||"", dataRet:r.data_ret||"", dataDev:r.data_dev||"",
-    obs:r.obs||"", foto };
+    obs:r.obs||"", foto, endereco:r.endereco||"" };
 }
 function histToRow(h) {
   return { id:h.id, tipo:h.tipo, loc:h.loc||"", codigo:h.codigo||"",
@@ -1593,6 +1594,7 @@ function openEdit(idx) {
       <div class="fld"><label>Data saída</label><input type="date" id="eret" value="${k.dataRet}"></div>
       <div class="fld"><label>Data devolução</label><input type="date" id="edev" value="${k.dataDev}"></div>
     </div>
+    ${!isCorretor?`<div class="fld"><label>Endereço</label><input id="eend" value="${k.endereco||''}" placeholder="Ex: R. Victor Konder, 230 AP: 201"></div>`:""}
     <div class="fld"><label>Observações</label><textarea id="eob" ${isCorretor?"disabled":""}>${k.obs}</textarea></div>
     ${can("genPDF")?`<button style="display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 14px;border-radius:8px;border:1.5px solid var(--or);background:var(--or-bg);font-family:var(--f);font-size:13px;font-weight:500;cursor:pointer;width:100%;color:var(--or);margin-top:4px;line-height:1.3;max-height:42px;overflow:hidden" onclick="saveAndPDF()"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="var(--or)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/></svg> Salvar e gerar protocolo</button>`:""}`;
   openSheet("me");
@@ -1675,6 +1677,7 @@ async function saveEdit(andPDF=false) {
   keys[eidx].responsavel = newStatus==="INDISPONÍVEL" ? (document.getElementById("er")?.value?.trim()||"") : "";
   keys[eidx].dataRet = newDataRet;
   keys[eidx].dataDev = newDataDev;
+  keys[eidx].endereco = (document.getElementById("eend")?.value||"").trim();
   keys[eidx].obs = document.getElementById("eob")?.value?.trim()||"";
 
   // Status rules: código preenchido em chave Livre → Disponível
@@ -2150,6 +2153,7 @@ async function gerarPDF(){
   if(!pKeys||!pKeys.length){toast("Selecione ao menos uma chave",true);return;}
   const nome=document.getElementById("pnome").value.trim();
   const cpf=document.getElementById("pcpf").value.trim();
+  const tel=(document.getElementById("ptel")?.value||"").trim();
   const dias=document.getElementById("pdias")?.value;
   const obs=document.getElementById("pobs").value.trim();
   if(!nome){toast("Digite o nome",true);return;}
@@ -2259,7 +2263,8 @@ async function gerarPDF(){
       y+=8+(lines.length-1)*5+10;
     };
 
-    field("Nome / Relação", nome+(cpf?` — CPF/RG: ${cpf}`:""));
+    field("Nome / Relação", nome+(cpf?` — CPF/RG: ${cpf}`:"")); 
+    if(tel) field("Telefone", tel);
     field("Tipo de destinatário", pTipo);
     field("Data de saída", fd(k.dataRet)||"—");
     field("Devolução prevista", pSaida==="TEMPORÁRIA"?fd(k.dataDev):"Não se aplica");
@@ -2322,12 +2327,20 @@ async function gerarPDF(){
       doc.setTextColor(100,100,96);
       doc.setFont("helvetica","normal");
       doc.text("Assinatura do recebedor",MARGIN+38,y+27,{align:"center"});
-      doc.text("ACRC Imóveis — Responsável",158,y+27,{align:"center"});
+      doc.text("Responsável — ACRC Imóveis",158,y+27,{align:"center"});
       doc.setFontSize(9);
       doc.setTextColor(25,25,23);
       doc.setFont("helvetica","bold");
       doc.text(nome,MARGIN+38,y+34,{align:"center"});
-      doc.text("Blumenau / SC",158,y+34,{align:"center"});
+      // Assinatura automática do emissor (nome em itálico negrito)
+      doc.setFont("helvetica","bolditalic");
+      doc.setFontSize(10);
+      doc.setTextColor(17,40,74);
+      doc.text(session?.name||"ACRC Imóveis",158,y+19,{align:"center"});
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(7.5);
+      doc.setTextColor(100,100,96);
+      doc.text(new Date().toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}),158,y+34,{align:"center"});
     }
 
     // ── FOOTER (sempre na base da página) ─────────────────
@@ -3067,9 +3080,12 @@ function updateNotifBar() {
   const QUARENTA_OITO_H = 48*60*60*1000;
   const now = new Date();
   const vencidas = keys.filter(k => {
+    // Só notifica chaves AINDA indisponíveis — ignora devolvidas
     if(k.status !== 'INDISPONÍVEL') return false;
-    if(k.dataDev) return k.dataDev < hoje;
-    if(k.dataRet) return (now - new Date(k.dataRet)) > QUARENTA_OITO_H;
+    // Chaves com prazo definido: só notifica após vencer E se ainda não devolvida
+    if(k.dataDev && k.dataDev < hoje) return true;
+    // Chaves sem prazo: notifica após 48h — mas só se dataRet existe e não tem dataDev preenchida
+    if(!k.dataDev && k.dataRet) return (now - new Date(k.dataRet)) > QUARENTA_OITO_H;
     return false;
   });
   const bar = document.getElementById('notif-bar');
