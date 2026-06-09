@@ -2214,19 +2214,28 @@ async function gerarPDF(){
     // ── CHAVE INFO BOX ────────────────────────────────────
     // Box com todas as chaves do protocolo
     const allLocs = processedKeys.map(pk=>pk.k.loc+(pk.k.codigo?" ("+pk.k.codigo+")":"")).join("  ·  ");
-    const boxH = processedKeys.length > 2 ? 28 : 22;
+    const multiKey = processedKeys.length > 1;
+    const boxH = multiKey ? Math.min(10 + processedKeys.length * 7, 40) : 22;
     doc.setFillColor(242,242,240);
     doc.roundedRect(MARGIN,36,PW-MARGIN*2,boxH,2,2,"F");
     doc.setTextColor(27,46,75);
     doc.setFont("helvetica","bold");
-    doc.setFontSize(processedKeys.length===1?20:13);
-    if(processedKeys.length===1){
+    if(!multiKey){
+      doc.setFontSize(20);
       doc.text(k.loc,MARGIN+6,47);
       if(k.codigo){doc.setFont("helvetica","normal");doc.setFontSize(9);doc.setTextColor(90,90,86);doc.text(`Código: ${k.codigo}`,MARGIN+6,53);}
     } else {
-      doc.setFontSize(11);
-      const locLines=doc.splitTextToSize(allLocs,PW-MARGIN*2-8);
-      doc.text(locLines,MARGIN+6,44);
+      // Listar TODAS as chaves com código
+      doc.setFontSize(9);
+      doc.setTextColor(80,80,80);
+      doc.text(`${processedKeys.length} chaves neste protocolo:`,MARGIN+4,42);
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(8.5);
+      doc.setTextColor(27,46,75);
+      processedKeys.forEach((pk,i)=>{
+        const line = `${pk.k.loc}${pk.k.codigo?" — "+pk.k.codigo:""}`;
+        doc.text("• "+line, MARGIN+4, 48 + i*6);
+      });
     }
 
     // Tipo de saída — badge direito
@@ -2379,15 +2388,17 @@ async function gerarPDF(){
     }
     saveAll();renderList();
   }
-  // Email de notificação (sem anexo — PDF já baixado localmente)
+  // Email de notificação — 1 email com todas as chaves do protocolo
+  const todasLocs = processedKeys.map(pk=>pk.k.loc).join(", ");
   const emailChanges=[
-    {campo:"Status",anterior:bl(prevK.status),novo:"Indisponível"},
+    {campo:"Chave(s)",anterior:"",novo:todasLocs},
     {campo:"Destinatário",anterior:"",novo:`${nome} (${pTipo})`},
     {campo:"Tipo de saída",anterior:"",novo:pSaida},
     {campo:"Data saída",anterior:"",novo:fd(k.dataRet)},
-    {campo:"Devolução",anterior:"",novo:pSaida==="TEMPORÁRIA"?fd(k.dataDev):"Não retorna"}
+    {campo:"Devolução",anterior:"",novo:pSaida==="TEMPORÁRIA"?fd(k.dataDev):"Não retorna"},
+    {campo:"Emitido por",anterior:"",novo:session?.name||"—"}
   ];
-  const subj=`Saída de chave — ${k.loc} — ${pTipo} — ${pSaida} — ${new Date().toLocaleDateString("pt-BR")}`;
+  const subj=`Protocolo de saída — ${todasLocs} — ${pTipo} — ${pSaida} — ${new Date().toLocaleDateString("pt-BR")}`;
   sendAutoEmail(subj, emailChanges, k, null, null);
   closeSheet("mp");
 }
