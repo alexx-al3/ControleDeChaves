@@ -3161,11 +3161,16 @@ async function checkOverdueKeys() {
   if(!cfg.emailDest && !session) return;
   const hoje = new Date().toISOString().slice(0,10);
   // Executado pelo agendador — apenas 1x por dia ao meio-dia
-  const vencidas = keys.filter(k =>
-    k.status === "INDISPONÍVEL" &&
-    k.dataDev &&
-    k.dataDev < hoje
-  );
+  const QUARENTA_OITO_H = 48 * 60 * 60 * 1000;
+  const now = new Date();
+  const vencidas = keys.filter(k => {
+    if(k.status !== "INDISPONÍVEL") return false;          // já devolvida → ignora
+    if(k.dataDev && k.dataDev < hoje) return true;         // temporária vencida
+    if(!k.dataDev && k.dataRet) {                          // saída normal sem prazo
+      return (now - new Date(k.dataRet)) > QUARENTA_OITO_H; // mais de 48h
+    }
+    return false;
+  });
   if(!vencidas.length) {
     localStorage.setItem("acrc_overdue_check", hoje);
     return;
