@@ -3150,6 +3150,170 @@ function toast(msg,err=false){const el=document.getElementById("toast");document
 load();
 if(session){ initApp(); }
 
+// ══════════════════════════════════════════════════════════════
+// SUPABASE REALTIME — sync em tempo real entre dispositivos
+// ══════════════════════════════════════════════════════════════
+let _realtimeChannel = null;
+let _realtimeDebounce = null;
+
+function initRealtime() {
+  if(!SUPA_URL || !SUPA_KEY) return;
+  // Desconecta canal anterior se existir
+  if(_realtimeChannel) {
+    try { _realtimeChannel.unsubscribe(); } catch(e){}
+    _realtimeChannel = null;
+  }
+
+  // Monta URL do WebSocket do Supabase
+  const wsUrl = SUPA_URL.replace('https://', 'wss://').replace('http://', 'ws://');
+  const fullUrl = `${wsUrl}/realtime/v1/websocket?apikey=${SUPA_KEY}&vsn=1.0.0`;
+
+  let ws;
+  let heartbeatInterval;
+  let reconnectTimeout;
+  let joined = false;
+
+  function connect() {
+    try {
+      ws = new WebSocket(fullUrl);
+    } catch(e) { return; }
+
+    ws.onopen = () => {
+      console.log("[Realtime] Conectado");
+      // Join channel postgres_changes
+      ws.send(JSON.stringify({
+        topic: "realtime:public",
+        event: "phx_join",
+        payload: {
+          config: {
+            broadcast: { self: false },
+            presence: { key: "" },
+            postgres_changes: [
+              { event: "*", schema: "public", table: "keys" },
+              { event: "*", schema: "public", table: "history" },
+              { event: "*", schema: "public", table: "users" }
+            ]
+          }
+        },
+        ref: "1"
+      }));
+      // Heartbeat a cada 25s
+      heartbeatInterval = setInterval(() => {
+        if(ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({topic:"phoenix",event:"heartbeat",payload:{},ref:"hb"}));
+        }
+      }, 25000);
+      joined = true;
+    };
+
+    ws.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if(msg.event !== "postgres_changes") return;
+        const change = msg.payload?.data;
+        if(!change) return;
+        const table = change.table;
+        const eventType = change.type; // INSERT, UPDATE, DELETE
+
+        console.log(`[Realtime] ${table} ${eventType}`);
+
+        // Debounce para não recarregar múltiplas vezes em sequência
+        clearTimeout(_realtimeDebounce);
+        _realtimeDebounce = setTimeout(() => {
+          handleRealtimeChange(table, eventType, change);
+        }, 300);
+      } catch(ex) {}
+    };
+
+    ws.onclose = (e) => {
+      clearInterval(heartbeatInterval);
+      if(joined && session) {
+        console.log("[Realtime] Desconectado, reconectando em 5s...");
+        reconnectTimeout = setTimeout(connect, 5000);
+      }
+    };
+
+    ws.onerror = () => {
+      clearInterval(heartbeatInterval);
+    };
+  }
+
+  connect();
+  _realtimeChannel = { unsubscribe: () => {
+    joined = false;
+    clearInterval(heartbeatInterval);
+    clearTimeout(reconnectTimeout);
+    if(ws) ws.close();
+  }};
+}
+
+async function handleRealtimeChange(table, eventType, change) {
+  // Não processar se fui eu que fiz a mudança (já está no localStorage)
+  // Mas recarregar do Supabase para garantir consistência
+  if(table === "keys") {
+    const record = change.record || change.old_record;
+    if(eventType === "DELETE" && record) {
+      keys = keys.filter(k => k.id !== record.id);
+    } else if(record) {
+      const updated = rowToKey(record);
+      const idx = keys.findIndex(k => k.id === updated.id);
+      if(idx >= 0) {
+        // Preservar foto local se Supabase não tem
+        if(!updated.foto && keys[idx].foto) updated.foto = keys[idx].foto;
+        keys[idx] = updated;
+      } else if(eventType === "INSERT") {
+        keys.push(updated);
+        keys.sort((a,b) => a.loc.localeCompare(b.loc));
+      }
+    }
+    localStorage.setItem(SK.k, JSON.stringify(keys));
+    renderList(); renderGer(); updateNotifBar();
+
+  } else if(table === "history") {
+    const record = change.record;
+    if(record && eventType === "INSERT") {
+      const alreadyExists = hist.some(h => h.id === record.id);
+      if(!alreadyExists) {
+        hist.unshift({
+          id: record.id, tipo: record.tipo, loc: record.loc,
+          codigo: record.codigo||"", responsavel: record.responsavel||"",
+          status: record.status||"", ts: record.ts,
+          usuario: record.usuario||"", perfil: record.perfil||"",
+          changes: record.changes||[], extra: record.extra||{}
+        });
+        if(hist.length > 2000) hist.length = 2000;
+        localStorage.setItem(SK.h, JSON.stringify(hist));
+        renderGHist();
+      }
+    }
+
+  } else if(table === "users") {
+    // Recarregar users do Supabase
+    const uRows = await sbFetch("users","GET",null,"?select=*").catch(()=>null);
+    if(uRows && uRows.length) {
+      users = uRows.map(rowToUser);
+      localStorage.setItem(SK.u, JSON.stringify(users));
+      if(can("manageUsers")) renderUsers();
+    }
+  }
+
+  // Indicador visual discreto de atualização
+  showSyncIndicator();
+}
+
+function showSyncIndicator() {
+  let ind = document.getElementById("sync-ind");
+  if(!ind) {
+    ind = document.createElement("div");
+    ind.id = "sync-ind";
+    ind.style.cssText = "position:fixed;bottom:calc(env(safe-area-inset-bottom)+68px);right:12px;background:#11284A;color:#fff;font-size:11px;padding:5px 10px;border-radius:20px;opacity:0;transition:opacity .3s;z-index:499;pointer-events:none;font-family:var(--f)";
+    ind.textContent = "↻ Sincronizado";
+    document.body.appendChild(ind);
+  }
+  ind.style.opacity = "1";
+  setTimeout(() => { ind.style.opacity = "0"; }, 2000);
+}
+
 // else: login screen is shown by default
 
 // ══════════════════════════════════════════
@@ -3158,16 +3322,30 @@ if(session){ initApp(); }
 // envia email uma vez por dia ao logar
 // ══════════════════════════════════════════
 async function checkOverdueKeys() {
-  if(!cfg.emailDest && !session) return;
+  if(!session) return;
   const hoje = new Date().toISOString().slice(0,10);
-  // Executado pelo agendador — apenas 1x por dia ao meio-dia
   const QUARENTA_OITO_H = 48 * 60 * 60 * 1000;
   const now = new Date();
-  const vencidas = keys.filter(k => {
-    if(k.status !== "INDISPONÍVEL") return false;          // já devolvida → ignora
-    if(k.dataDev && k.dataDev < hoje) return true;         // temporária vencida
-    if(!k.dataDev && k.dataRet) {                          // saída normal sem prazo
-      return (now - new Date(k.dataRet)) > QUARENTA_OITO_H; // mais de 48h
+  // Busca status FRESCO do Supabase — evita notificar chaves já devolvidas
+  let keysToCheck = keys;
+  if(SUPA_URL && SUPA_KEY) {
+    try {
+      const fresh = await sbFetch("keys","GET",null,"?select=id,loc,codigo,status,responsavel,data_ret,data_dev&status=eq.INDISPONÍVEL");
+      if(fresh && fresh.length) {
+        keysToCheck = fresh.map(r=>({
+          id:r.id, loc:r.loc, codigo:r.codigo||"", status:r.status,
+          responsavel:r.responsavel||"", dataRet:r.data_ret||"", dataDev:r.data_dev||""
+        }));
+      }
+    } catch(e) { console.warn("[Overdue] Usando cache local"); }
+  }
+  const vencidas = keysToCheck.filter(k => {
+    if(k.status !== "INDISPONÍVEL") return false;
+    if(k.dataDev && k.dataDev < hoje) return true;
+    if(!k.dataDev && k.dataRet) {
+      const saida = new Date(k.dataRet);
+      if(isNaN(saida.getTime())) return false;
+      return (now - saida) > QUARENTA_OITO_H;
     }
     return false;
   });
@@ -3175,16 +3353,29 @@ async function checkOverdueKeys() {
     localStorage.setItem("acrc_overdue_check", hoje);
     return;
   }
-  // Monta tabela HTML das chaves vencidas
+  // Calcula dias com proteção NaN
+  function diasAtraso(k) {
+    if(k.dataDev && k.dataDev < hoje) {
+      const d = Math.ceil((new Date(hoje)-new Date(k.dataDev))/(1000*60*60*24));
+      return isNaN(d) ? "?" : d;
+    }
+    if(k.dataRet) {
+      const d = Math.ceil((now-new Date(k.dataRet))/(1000*60*60*24));
+      return isNaN(d) ? "?" : d;
+    }
+    return "?";
+  }
+  function situacaoLabel(k) {
+    const d = diasAtraso(k);
+    return k.dataDev && k.dataDev < hoje ? `${d} dia(s) — prazo vencido` : `${d} dia(s) — sem prazo`;
+  }
   const rows = vencidas.map(k => `
     <tr>
       <td style="padding:6px 10px;border:1px solid #e4e4e0;font-family:monospace;font-weight:600;color:#1B2E4B">${k.loc}</td>
       <td style="padding:6px 10px;border:1px solid #e4e4e0">${k.codigo||"—"}</td>
       <td style="padding:6px 10px;border:1px solid #e4e4e0">${k.responsavel||"—"}</td>
-      <td style="padding:6px 10px;border:1px solid #e4e4e0;color:#a12828;font-weight:600">${fd(k.dataDev)}</td>
-      <td style="padding:6px 10px;border:1px solid #e4e4e0;color:#a12828">
-        ${Math.ceil((new Date(hoje)-new Date(k.dataDev))/(1000*60*60*24))} dia(s) em atraso
-      </td>
+      <td style="padding:6px 10px;border:1px solid #e4e4e0;color:#a12828;font-weight:600">${fd(k.dataDev)||"Sem prazo"}</td>
+      <td style="padding:6px 10px;border:1px solid #e4e4e0;color:#a12828">${situacaoLabel(k)}</td>
     </tr>`).join("");
   const htmlBody = `<!DOCTYPE html><html><body style="font-family:'DM Sans',Arial,sans-serif;color:#191917;max-width:600px;margin:0 auto;padding:20px">
     <div style="background:linear-gradient(135deg,#1B2E4B,#243d61);padding:20px 24px;border-radius:12px 12px 0 0">
