@@ -1396,19 +1396,24 @@ function openFotoFullscreen(src) {
   document.body.appendChild(ov);
 }
 
+let _overdueScheduled = false; // garante 1 único agendamento
+
 function scheduleOverdueCheck() {
+  if(_overdueScheduled) return; // já agendado — ignora recarregamentos
+  _overdueScheduled = true;
   const now = new Date();
   const noon = new Date(now);
   noon.setHours(12, 0, 0, 0);
-  // Se já passou do meio-dia hoje, agenda para amanhã
   if(now >= noon) noon.setDate(noon.getDate() + 1);
   const msUntilNoon = noon - now;
   setTimeout(async () => {
     await checkOverdueKeys();
-    // Reagendar para o próximo meio-dia (24h depois)
-    setInterval(checkOverdueKeys, 24 * 60 * 60 * 1000);
+    // Reagenda para o próximo meio-dia usando setTimeout (não setInterval)
+    // setTimeout garante 1 disparo, não acumula
+    _overdueScheduled = false;
+    scheduleOverdueCheck();
   }, msUntilNoon);
-  console.log(`[Overdue] Próxima verificação em ${Math.round(msUntilNoon/60000)} min`);
+  console.log(`[Overdue] Próxima verificação em ${Math.round(msUntilNoon/60000)} min (${noon.toLocaleTimeString('pt-BR')})`);
 }
 
 // ══════════════════════════════════════════
@@ -3158,89 +3163,79 @@ let _realtimeDebounce = null;
 
 function initRealtime() {
   if(!SUPA_URL || !SUPA_KEY) return;
-  // Desconecta canal anterior se existir
   if(_realtimeChannel) {
     try { _realtimeChannel.unsubscribe(); } catch(e){}
     _realtimeChannel = null;
   }
 
-  // Monta URL do WebSocket do Supabase
-  const wsUrl = SUPA_URL.replace('https://', 'wss://').replace('http://', 'ws://');
-  const fullUrl = `${wsUrl}/realtime/v1/websocket?apikey=${SUPA_KEY}&vsn=1.0.0`;
+  const wsBase = SUPA_URL.replace('https://','wss://').replace('http://','ws://');
+  const fullUrl = `${wsBase}/realtime/v1/websocket?apikey=${SUPA_KEY}&vsn=1.0.0`;
 
-  let ws;
-  let heartbeatInterval;
-  let reconnectTimeout;
-  let joined = false;
+  let ws, heartbeatInterval, reconnectTimeout, joinRef = 0;
+  let active = true;
 
   function connect() {
-    try {
-      ws = new WebSocket(fullUrl);
-    } catch(e) { return; }
+    if(!active) return;
+    try { ws = new WebSocket(fullUrl); } catch(e){ return; }
 
     ws.onopen = () => {
-      console.log("[Realtime] Conectado");
-      // Join channel postgres_changes
-      ws.send(JSON.stringify({
-        topic: "realtime:public",
-        event: "phx_join",
-        payload: {
-          config: {
-            broadcast: { self: false },
-            presence: { key: "" },
-            postgres_changes: [
-              { event: "*", schema: "public", table: "keys" },
-              { event: "*", schema: "public", table: "history" },
-              { event: "*", schema: "public", table: "users" }
-            ]
-          }
-        },
-        ref: "1"
-      }));
-      // Heartbeat a cada 25s
+      console.log("[Realtime] WebSocket aberto");
+      joinRef++;
+      const ref = String(joinRef);
+      // Join um canal por tabela (formato correto Supabase Realtime)
+      ["keys","history","users"].forEach((tbl, i) => {
+        ws.send(JSON.stringify({
+          topic: `realtime:public:${tbl}`,
+          event: "phx_join",
+          payload: {
+            config: {
+              postgres_changes: [{ event: "*", schema: "public", table: tbl }]
+            }
+          },
+          ref: `${ref}_${i}`
+        }));
+      });
       heartbeatInterval = setInterval(() => {
-        if(ws.readyState === WebSocket.OPEN) {
+        if(ws.readyState === WebSocket.OPEN)
           ws.send(JSON.stringify({topic:"phoenix",event:"heartbeat",payload:{},ref:"hb"}));
-        }
       }, 25000);
-      joined = true;
     };
 
     ws.onmessage = (e) => {
       try {
         const msg = JSON.parse(e.data);
-        if(msg.event !== "postgres_changes") return;
-        const change = msg.payload?.data;
-        if(!change) return;
-        const table = change.table;
-        const eventType = change.type; // INSERT, UPDATE, DELETE
-
+        // Aceitar tanto 'postgres_changes' quanto 'INSERT'/'UPDATE'/'DELETE'
+        const isChange = msg.event === "postgres_changes" ||
+                         ["INSERT","UPDATE","DELETE"].includes(msg.event);
+        if(!isChange) return;
+        // Extrair dados da mudança
+        const payload = msg.payload || {};
+        const change = payload.data || payload;
+        const table = change.table || (msg.topic||"").split(":")[2];
+        const eventType = change.type || msg.event;
+        if(!table || !eventType) return;
         console.log(`[Realtime] ${table} ${eventType}`);
-
-        // Debounce para não recarregar múltiplas vezes em sequência
         clearTimeout(_realtimeDebounce);
         _realtimeDebounce = setTimeout(() => {
           handleRealtimeChange(table, eventType, change);
-        }, 300);
+        }, 400);
       } catch(ex) {}
     };
 
-    ws.onclose = (e) => {
+    ws.onclose = () => {
       clearInterval(heartbeatInterval);
-      if(joined && session) {
-        console.log("[Realtime] Desconectado, reconectando em 5s...");
+      if(active && session) {
+        console.log("[Realtime] Reconectando em 5s...");
         reconnectTimeout = setTimeout(connect, 5000);
       }
     };
 
-    ws.onerror = () => {
-      clearInterval(heartbeatInterval);
-    };
+    ws.onerror = () => clearInterval(heartbeatInterval);
   }
 
   connect();
   _realtimeChannel = { unsubscribe: () => {
-    joined = false;
+    active = false;
     clearInterval(heartbeatInterval);
     clearTimeout(reconnectTimeout);
     if(ws) ws.close();
@@ -3324,6 +3319,12 @@ function showSyncIndicator() {
 async function checkOverdueKeys() {
   if(!session) return;
   const hoje = new Date().toISOString().slice(0,10);
+  // Verificar se já enviou hoje — evita duplicatas
+  const lastSent = localStorage.getItem("acrc_overdue_sent");
+  if(lastSent === hoje) {
+    console.log("[Overdue] Já enviado hoje, ignorando");
+    return;
+  }
   const QUARENTA_OITO_H = 48 * 60 * 60 * 1000;
   const now = new Date();
   // Busca status FRESCO do Supabase — evita notificar chaves já devolvidas
@@ -3350,7 +3351,7 @@ async function checkOverdueKeys() {
     return false;
   });
   if(!vencidas.length) {
-    localStorage.setItem("acrc_overdue_check", hoje);
+    console.log("[Overdue] Sem vencidas hoje");
     return;
   }
   // Calcula dias com proteção NaN
@@ -3414,10 +3415,11 @@ async function checkOverdueKeys() {
       })
     });
     console.log(`[Overdue] Email enviado — ${vencidas.length} chave(s) vencida(s)`);
+    localStorage.setItem("acrc_overdue_sent", hoje); // marca enviado com sucesso
   } catch(e) {
     console.warn("[Overdue] Erro ao enviar email:", e.message);
+    // Não marca como enviado se falhou — tentará novamente amanhã
   }
-  localStorage.setItem("acrc_overdue_check", hoje);
 }
 
 // PWA install prompt
