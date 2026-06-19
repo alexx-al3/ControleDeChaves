@@ -1094,18 +1094,19 @@ function load() {
   if(ss) { try { session = JSON.parse(ss); } catch(e) {} }
 }
 
-// Load from Supabase (async, called after login)
+// Load from Supabase — paralelo para ser mais rápido
 async function loadFromSupabase() {
   if(!SUPA_URL||!SUPA_KEY) return;
   try {
-    // Keys
-    const kRows = await sbFetch("keys","GET",null,"?select=*&order=loc.asc");
+    // Keys + Users em paralelo (não espera um terminar para começar o outro)
+    const [kRows, uRows] = await Promise.all([
+      sbFetch("keys","GET",null,"?select=*&order=loc.asc"),
+      sbFetch("users","GET",null,"?select=*")
+    ]);
     if(kRows&&kRows.length) {
-      // Preservar fotos locais se Supabase não tiver URL ainda
       const localCache = (() => { try { return JSON.parse(localStorage.getItem(SK.k))||[]; } catch(e){ return []; } })();
       keys = kRows.map(r => {
         const mapped = rowToKey(r);
-        // Se Supabase não tem foto mas localStorage tem, preservar local
         if(!mapped.foto) {
           const local = localCache.find(lk => lk.id === r.id);
           if(local?.foto) mapped.foto = local.foto;
@@ -1116,21 +1117,21 @@ async function loadFromSupabase() {
     } else if(kRows&&kRows.length===0) {
       await syncKeysToSupabase(keys);
     }
-    // History (last 500)
-    const hRows = await sbFetch("history","GET",null,"?select=*&order=ts.desc&limit=500");
-    if(hRows&&hRows.length) {
-      hist = hRows.map(r=>({...r, changes:r.changes||[], ts:r.ts}));
-      localStorage.setItem(SK.h, JSON.stringify(hist));
-    }
-    // Users
-    const uRows = await sbFetch("users","GET",null,"?select=*");
     if(uRows&&uRows.length) {
       users = uRows.map(rowToUser);
       localStorage.setItem(SK.u, JSON.stringify(users));
     } else if(uRows&&uRows.length===0) {
-      // First time: push default users
       for(const u of users) await sbFetch("users","POST",[userToRow(u)]);
     }
+    // Histórico em background — não bloqueia a tela
+    sbFetch("history","GET",null,"?select=*&order=ts.desc&limit=200")
+      .then(hRows => {
+        if(hRows&&hRows.length) {
+          hist = hRows.map(r=>({...r, changes:r.changes||[], ts:r.ts}));
+          localStorage.setItem(SK.h, JSON.stringify(hist));
+          renderGHist();
+        }
+      }).catch(()=>{});
   } catch(e) {
     console.warn("[Supabase load]", e.message);
   }
@@ -1371,6 +1372,9 @@ async function initApp() {
   switchScreen("chaves");
   // Show loading, then load from Supabase
   document.getElementById("klist").innerHTML='<div class="empty"><svg viewBox="0 0 24 24" style="animation:spin 1s linear infinite;stroke:var(--or);fill:none;stroke-width:2;stroke-linecap:round"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg><p style="margin-top:8px">Sincronizando...</p></div>';
+  // Renderizar com cache local imediatamente (tela aparece na hora)
+  renderList(); renderGer();
+  // Buscar dados frescos do Supabase em background
   await loadFromSupabase();
   renderList();
   if(can("viewAdmin")) { renderGer(); renderGHist(); }
@@ -1419,53 +1423,52 @@ function stopPolling() {
 
 async function pollSync() {
   if(!session || !SUPA_URL || !SUPA_KEY) return;
-  if(_editingKeyId) return; // editando — não sobrescreve
+  if(_editingKeyId) return;
   try {
-    // Buscar TODAS as chaves do Supabase e comparar com local
-    const freshKeys = await sbFetch("keys","GET",null,"?select=*&order=loc.asc");
-    if(freshKeys && freshKeys.length) {
-      let changed = false;
-      // Verificar chaves novas ou alteradas
-      freshKeys.forEach(r => {
+    // Buscar APENAS chaves alteradas desde o último poll (inteligente)
+    const sinceIso = new Date(Date.now() - 15000).toISOString();
+    const changed = await sbFetch("keys","GET",null,
+      `?select=id,loc,codigo,status,responsavel,data_ret,data_dev,obs,foto,endereco,updated_at&updated_at=gt.${sinceIso}`
+    );
+    if(changed && changed.length) {
+      const mkOpen = document.getElementById("mk")?.classList.contains("open");
+      const mkTitle = document.getElementById("mk-t")?.textContent||"";
+      let didChange = false;
+      changed.forEach(r => {
         const updated = rowToKey(r);
         const idx = keys.findIndex(k => k.id === updated.id);
-        // Preservar foto local se Supabase não tem
+        // Não sobrescrever chave aberta no modal
+        if(mkOpen && mkTitle.includes(updated.loc)) return;
         if(!updated.foto && idx >= 0 && keys[idx].foto) updated.foto = keys[idx].foto;
-        // Não atualizar chave que está aberta no modal
-        const mkOpen = document.getElementById("mk")?.classList.contains("open");
-        const mkTitle = document.getElementById("mk-t")?.textContent||"";
-        const isOpen = mkOpen && mkTitle.includes(updated.loc);
-        if(isOpen) return;
-        if(idx >= 0) {
-          // Comparar status para detectar mudança
-          if(keys[idx].status !== updated.status ||
-             keys[idx].responsavel !== updated.responsavel ||
-             keys[idx].codigo !== updated.codigo ||
-             keys[idx].endereco !== updated.endereco) {
-            keys[idx] = updated;
-            changed = true;
-          }
-        } else {
-          keys.push(updated);
-          changed = true;
-        }
+        if(idx >= 0) { keys[idx] = updated; didChange = true; }
+        else { keys.push(updated); didChange = true; }
       });
-      // Verificar chaves deletadas
-      const freshIds = new Set(freshKeys.map(r=>r.id));
-      const before = keys.length;
-      keys = keys.filter(k => freshIds.has(k.id));
-      if(keys.length !== before) changed = true;
-      if(changed) {
+      if(didChange) {
         keys.sort((a,b)=>a.loc.localeCompare(b.loc));
         localStorage.setItem(SK.k, JSON.stringify(keys));
         renderList(); renderGer(); updateNotifBar();
         showSyncIndicator();
-        console.log("[Polling] Atualizado");
+        console.log(`[Sync] ${changed.length} chave(s) atualizada(s)`);
       }
     }
-    _lastSyncTs = Date.now();
+    // Verificar novos usuários (menos frequente — a cada 3 polls)
+    if(!pollSync._userCounter) pollSync._userCounter = 0;
+    pollSync._userCounter++;
+    if(pollSync._userCounter >= 3) {
+      pollSync._userCounter = 0;
+      const uRows = await sbFetch("users","GET",null,"?select=*").catch(()=>null);
+      if(uRows?.length) {
+        const newHash = JSON.stringify(uRows.map(u=>u.id+u.pass).sort());
+        if(newHash !== pollSync._userHash) {
+          pollSync._userHash = newHash;
+          users = uRows.map(rowToUser);
+          localStorage.setItem(SK.u, JSON.stringify(users));
+          if(can("manageUsers")) renderUsers();
+        }
+      }
+    }
   } catch(e) {
-    console.warn("[Polling] Erro:", e.message);
+    console.warn("[Sync] Erro:", e.message);
   }
 }
 
