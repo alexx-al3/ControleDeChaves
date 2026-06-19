@@ -29,6 +29,7 @@
 <meta name="msapplication-TileColor" content="#1B2E4B">
 <meta name="msapplication-config" content="none">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -848,6 +849,10 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
         <div class="dwrap show" id="dw"><input type="number" id="pdias" value="7" min="1" max="365"><span>dias para devolução</span></div>
         <p class="fhint" id="shint">Chave retorna após o prazo.</p>
       </div>
+      <div id="proto-end-wrap" style="display:none;background:var(--s2);border-radius:9px;padding:9px 12px;border-left:3px solid var(--or)">
+        <div style="font-size:11px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Endereço do Imóvel</div>
+        <div id="proto-end-txt" style="font-size:13px;font-weight:500;color:var(--tx)"></div>
+      </div>
       <div class="fld"><label>Observações</label><textarea id="pobs" placeholder="Condições, motivo..."></textarea></div>
       <!-- ASSINATURA — só ADM e Cadastro -->
       <div class="fld sig-wrap" id="sig-wrap">
@@ -1373,6 +1378,8 @@ async function initApp() {
   setTimeout(updateNotifBar, 1200);
   // Agendar verificação de vencidos para o próximo meio-dia
   scheduleOverdueCheck();
+  startPolling();
+  setTimeout(initRealtime, 2000);
 }
 
 // ── Toggle senha visível/oculta ──────────────────────────
@@ -1394,6 +1401,72 @@ function openFotoFullscreen(src) {
   ov.innerHTML = `<img src="${src}" alt="Foto da chave"><button class="foto-close" onclick="this.parentNode.remove()">×</button>`;
   ov.onclick = e => { if(e.target===ov) ov.remove(); };
   document.body.appendChild(ov);
+}
+
+// ══════════════════════════════════════════
+// POLLING — sincronização a cada 30s
+// Fallback garantido para todos os dispositivos
+// ══════════════════════════════════════════
+function startPolling() {
+  if(_pollingInterval) clearInterval(_pollingInterval);
+  _pollingInterval = setInterval(pollSync, 10000);
+  console.log("[Polling] Iniciado — sincroniza a cada 10s");
+}
+
+function stopPolling() {
+  if(_pollingInterval) { clearInterval(_pollingInterval); _pollingInterval = null; }
+}
+
+async function pollSync() {
+  if(!session || !SUPA_URL || !SUPA_KEY) return;
+  if(_editingKeyId) return; // editando — não sobrescreve
+  try {
+    // Buscar TODAS as chaves do Supabase e comparar com local
+    const freshKeys = await sbFetch("keys","GET",null,"?select=*&order=loc.asc");
+    if(freshKeys && freshKeys.length) {
+      let changed = false;
+      // Verificar chaves novas ou alteradas
+      freshKeys.forEach(r => {
+        const updated = rowToKey(r);
+        const idx = keys.findIndex(k => k.id === updated.id);
+        // Preservar foto local se Supabase não tem
+        if(!updated.foto && idx >= 0 && keys[idx].foto) updated.foto = keys[idx].foto;
+        // Não atualizar chave que está aberta no modal
+        const mkOpen = document.getElementById("mk")?.classList.contains("open");
+        const mkTitle = document.getElementById("mk-t")?.textContent||"";
+        const isOpen = mkOpen && mkTitle.includes(updated.loc);
+        if(isOpen) return;
+        if(idx >= 0) {
+          // Comparar status para detectar mudança
+          if(keys[idx].status !== updated.status ||
+             keys[idx].responsavel !== updated.responsavel ||
+             keys[idx].codigo !== updated.codigo ||
+             keys[idx].endereco !== updated.endereco) {
+            keys[idx] = updated;
+            changed = true;
+          }
+        } else {
+          keys.push(updated);
+          changed = true;
+        }
+      });
+      // Verificar chaves deletadas
+      const freshIds = new Set(freshKeys.map(r=>r.id));
+      const before = keys.length;
+      keys = keys.filter(k => freshIds.has(k.id));
+      if(keys.length !== before) changed = true;
+      if(changed) {
+        keys.sort((a,b)=>a.loc.localeCompare(b.loc));
+        localStorage.setItem(SK.k, JSON.stringify(keys));
+        renderList(); renderGer(); updateNotifBar();
+        showSyncIndicator();
+        console.log("[Polling] Atualizado");
+      }
+    }
+    _lastSyncTs = Date.now();
+  } catch(e) {
+    console.warn("[Polling] Erro:", e.message);
+  }
 }
 
 let _overdueScheduled = false; // garante 1 único agendamento
@@ -1574,6 +1647,7 @@ function openKey(idx) {
 let eidx=null, ephoto="";
 function openEdit(idx) {
   eidx=idx; ephoto=keys[idx].foto||""; ephotoFile=null;
+  _editingKeyId = keys[idx].id; // bloqueia polling enquanto edita
   const k=keys[idx], isCorretor=session?.role==="corretor";
   document.getElementById("me-t").textContent = "Chave — "+k.loc;
   // Corretor: can only edit foto, dataRet, dataDev, responsavel (only if INDISP), status limited
@@ -1691,10 +1765,13 @@ async function saveEdit(andPDF=false) {
   if(newCodigo && !prev.codigo && (keys[eidx].status==="LIVRE"||prev.status==="LIVRE")) keys[eidx].status="DISPONÍVEL";
   // DISPONÍVEL: clear dates
   if(keys[eidx].status==="DISPONÍVEL") { keys[eidx].dataRet=""; keys[eidx].dataDev=""; }
-  // LIVRE: limpa TODOS os campos operacionais incluindo código + histórico
+  // LIVRE: limpa TODOS os campos incluindo foto e endereço
   if(keys[eidx].status==="LIVRE") {
+    // Deletar foto do Storage se existir
+    if(keys[eidx].foto && keys[eidx].foto.startsWith("http")) deleteFoto(keys[eidx].foto);
     keys[eidx].codigo=""; keys[eidx].responsavel="";
     keys[eidx].dataRet=""; keys[eidx].dataDev=""; keys[eidx].obs="";
+    keys[eidx].foto=""; keys[eidx].endereco="";
     // Limpar histórico desta chave (nova fase)
     hist = hist.filter(h => h.loc !== keys[eidx].loc);
     if(SUPA_URL&&SUPA_KEY) sbFetch("history","DELETE",null,`?loc=eq.${encodeURIComponent(keys[eidx].loc)}`).catch(()=>{});
@@ -2091,6 +2168,7 @@ function openPDF(idx){
   document.getElementById("pnome").value=k.responsavel||"";
   document.getElementById("pobs").value=k.obs||"";
   document.getElementById("pcpf").value="";
+  document.getElementById("ptel")?.value&&(document.getElementById("ptel").value="");
   document.getElementById("proto-search").value="";
   document.getElementById("proto-results").style.display="none";
   pTipo="INQUILINO"; pSaida="TEMPORÁRIA";
@@ -2103,6 +2181,10 @@ function openPDF(idx){
   sw.classList.toggle("show",can("signature"));
   if(can("signature")){ clearSig(); setTimeout(initSig,350); }
   renderProtoKeys();
+  // Preencher observações com endereço se a chave tiver
+  if(!document.getElementById("pobs").value && keys[idx]?.endereco) {
+    document.getElementById("pobs").value = keys[idx].endereco;
+  }
   openSheet("mp");
 }
 
@@ -2113,10 +2195,25 @@ function renderProtoKeys(){
   el.innerHTML=pKeys.map((ki,i)=>{
     const k=keys[ki];
     return`<div class="proto-key-item">
-      <div><span class="proto-key-loc">${k.loc}</span>${k.codigo?`<span style="font-size:11px;color:var(--tx3);margin-left:6px">${k.codigo}</span>`:""}</div>
+      <div style="flex:1;min-width:0">
+        <div><span class="proto-key-loc">${k.loc}</span>${k.codigo?`<span style="font-size:11px;color:var(--tx3);margin-left:6px">${k.codigo}</span>`:""}</div>
+        ${k.endereco?`<div style="font-size:11px;color:var(--tx2);margin-top:2px">📍 ${k.endereco}</div>`:""}
+      </div>
       ${pKeys.length>1?`<button class="proto-key-remove" onclick="protoRemoveKey(${i})">×</button>`:""}
     </div>`;
   }).join("");
+  // Mostrar endereços consolidados no painel
+  const enderecos = pKeys.map(ki=>keys[ki]?.endereco).filter(Boolean);
+  const wrap = document.getElementById("proto-end-wrap");
+  const txt = document.getElementById("proto-end-txt");
+  if(wrap && txt) {
+    if(enderecos.length) {
+      txt.textContent = [...new Set(enderecos)].join(" · ");
+      wrap.style.display = "block";
+    } else {
+      wrap.style.display = "none";
+    }
+  }
 }
 
 function protoRemoveKey(i){
@@ -2282,6 +2379,9 @@ async function gerarPDF(){
     field("Nome / Relação", nome+(cpf?` — CPF/RG: ${cpf}`:"")); 
     if(tel) field("Telefone", tel);
     field("Tipo de destinatário", pTipo);
+    // Endereço: pega do campo endereco das chaves
+    const endImovel = processedKeys.map(pk=>(pk.k.endereco||"").trim()).filter(Boolean).join("  ·  ");
+    if(endImovel) field("Endereço do Imóvel", endImovel);
     field("Data de saída", fd(k.dataRet)||"—");
     field("Devolução prevista", pSaida==="TEMPORÁRIA"?fd(k.dataDev):"Não se aplica");
     field("Responsável ACRC", "ACRC Imóveis — Blumenau / SC");
@@ -3160,6 +3260,9 @@ if(session){ initApp(); }
 // ══════════════════════════════════════════════════════════════
 let _realtimeChannel = null;
 let _realtimeDebounce = null;
+let _pollingInterval = null;
+let _lastSyncTs = 0; // timestamp da última sincronização
+let _editingKeyId = null; // chave sendo editada no momento
 
 function initRealtime() {
   if(!SUPA_URL || !SUPA_KEY) return;
@@ -3167,79 +3270,50 @@ function initRealtime() {
     try { _realtimeChannel.unsubscribe(); } catch(e){}
     _realtimeChannel = null;
   }
+  try {
+    // Usar SDK oficial do Supabase para Realtime
+    const supaClient = window.supabase?.createClient(SUPA_URL, SUPA_KEY);
+    if(!supaClient) { console.warn("[Realtime] SDK não carregado"); return; }
 
-  const wsBase = SUPA_URL.replace('https://','wss://').replace('http://','ws://');
-  const fullUrl = `${wsBase}/realtime/v1/websocket?apikey=${SUPA_KEY}&vsn=1.0.0`;
-
-  let ws, heartbeatInterval, reconnectTimeout, joinRef = 0;
-  let active = true;
-
-  function connect() {
-    if(!active) return;
-    try { ws = new WebSocket(fullUrl); } catch(e){ return; }
-
-    ws.onopen = () => {
-      console.log("[Realtime] WebSocket aberto");
-      joinRef++;
-      const ref = String(joinRef);
-      // Join um canal por tabela (formato correto Supabase Realtime)
-      ["keys","history","users"].forEach((tbl, i) => {
-        ws.send(JSON.stringify({
-          topic: `realtime:public:${tbl}`,
-          event: "phx_join",
-          payload: {
-            config: {
-              postgres_changes: [{ event: "*", schema: "public", table: tbl }]
-            }
-          },
-          ref: `${ref}_${i}`
-        }));
+    const channel = supaClient
+      .channel("acrc-changes")
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "keys" },
+        (payload) => {
+          console.log("[Realtime] keys:", payload.eventType);
+          clearTimeout(_realtimeDebounce);
+          _realtimeDebounce = setTimeout(() => pollSync(), 200);
+        }
+      )
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "history" },
+        (payload) => {
+          console.log("[Realtime] history:", payload.eventType);
+          clearTimeout(_realtimeDebounce);
+          _realtimeDebounce = setTimeout(() => pollSync(), 200);
+        }
+      )
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "users" },
+        async () => {
+          const uRows = await sbFetch("users","GET",null,"?select=*").catch(()=>null);
+          if(uRows?.length) {
+            users = uRows.map(rowToUser);
+            localStorage.setItem(SK.u, JSON.stringify(users));
+            if(can("manageUsers")) renderUsers();
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log("[Realtime] Status:", status);
+        if(status === "SUBSCRIBED") showSyncIndicator();
       });
-      heartbeatInterval = setInterval(() => {
-        if(ws.readyState === WebSocket.OPEN)
-          ws.send(JSON.stringify({topic:"phoenix",event:"heartbeat",payload:{},ref:"hb"}));
-      }, 25000);
-    };
 
-    ws.onmessage = (e) => {
-      try {
-        const msg = JSON.parse(e.data);
-        // Aceitar tanto 'postgres_changes' quanto 'INSERT'/'UPDATE'/'DELETE'
-        const isChange = msg.event === "postgres_changes" ||
-                         ["INSERT","UPDATE","DELETE"].includes(msg.event);
-        if(!isChange) return;
-        // Extrair dados da mudança
-        const payload = msg.payload || {};
-        const change = payload.data || payload;
-        const table = change.table || (msg.topic||"").split(":")[2];
-        const eventType = change.type || msg.event;
-        if(!table || !eventType) return;
-        console.log(`[Realtime] ${table} ${eventType}`);
-        clearTimeout(_realtimeDebounce);
-        _realtimeDebounce = setTimeout(() => {
-          handleRealtimeChange(table, eventType, change);
-        }, 400);
-      } catch(ex) {}
-    };
-
-    ws.onclose = () => {
-      clearInterval(heartbeatInterval);
-      if(active && session) {
-        console.log("[Realtime] Reconectando em 5s...");
-        reconnectTimeout = setTimeout(connect, 5000);
-      }
-    };
-
-    ws.onerror = () => clearInterval(heartbeatInterval);
+    _realtimeChannel = channel;
+    console.log("[Realtime] Canal iniciado via SDK");
+  } catch(e) {
+    console.warn("[Realtime] Erro:", e.message);
   }
-
-  connect();
-  _realtimeChannel = { unsubscribe: () => {
-    active = false;
-    clearInterval(heartbeatInterval);
-    clearTimeout(reconnectTimeout);
-    if(ws) ws.close();
-  }};
 }
 
 async function handleRealtimeChange(table, eventType, change) {
@@ -3319,12 +3393,15 @@ function showSyncIndicator() {
 async function checkOverdueKeys() {
   if(!session) return;
   const hoje = new Date().toISOString().slice(0,10);
-  // Verificar se já enviou hoje — evita duplicatas
+  // Verificar localStorage E sessionStorage — evita disparos em múltiplos dispositivos
   const lastSent = localStorage.getItem("acrc_overdue_sent");
-  if(lastSent === hoje) {
+  const sentThisSession = sessionStorage.getItem("acrc_overdue_session");
+  if(lastSent === hoje || sentThisSession === hoje) {
     console.log("[Overdue] Já enviado hoje, ignorando");
     return;
   }
+  // Marcar sessão antes de enviar para evitar race condition entre dispositivos
+  sessionStorage.setItem("acrc_overdue_session", hoje);
   const QUARENTA_OITO_H = 48 * 60 * 60 * 1000;
   const now = new Date();
   // Busca status FRESCO do Supabase — evita notificar chaves já devolvidas
