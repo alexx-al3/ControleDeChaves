@@ -696,6 +696,17 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
             </button>
           </div>
         </div>
+        <!-- Sincronização — só Cadastro -->
+        <div id="sync-section" style="display:none">
+          <p class="asec" style="margin-top:16px">Sincronização</p>
+          <div class="cpform">
+            <p class="hint">O sistema usa cache inteligente e só baixa o que mudou. Se suspeitar de dados desatualizados, force uma sincronização completa.</p>
+            <button class="addbtn" onclick="forceFullSync(this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+              Forçar sincronização completa
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1095,6 +1106,7 @@ function defaultKeys() {
 }
 
 let keys=[], hist=[], cfg={}, users=[], session=null;
+const SK_SYNC_TS = 'acrc_last_sync'; // timestamp do último sync bem-sucedido
 
 function load() {
   try { keys  = JSON.parse(localStorage.getItem(SK.k)) || defaultKeys(); } catch(e) { keys  = defaultKeys(); }
@@ -1106,39 +1118,87 @@ function load() {
   if(ss) { try { session = JSON.parse(ss); } catch(e) {} }
 }
 
-// Load from Supabase — paralelo para ser mais rápido
+// ══════════════════════════════════════════
+// DELTA SYNC — busca só o que mudou desde o último sync
+// Na primeira sessão do dispositivo: busca tudo
+// Nas seguintes: busca apenas linhas com updated_at > lastSyncTs
+// ══════════════════════════════════════════
 async function loadFromSupabase() {
   if(!SUPA_URL||!SUPA_KEY) return;
   try {
-    // Keys + Users em paralelo (não espera um terminar para começar o outro)
-    const [kRows, uRows] = await Promise.all([
-      sbFetch("keys","GET",null,"?select=id,loc,codigo,status,responsavel,data_ret,data_dev,obs,endereco,updated_at&order=loc.asc"),
-      sbFetch("users","GET",null,"?select=*")
-    ]);
-    if(kRows&&kRows.length) {
-      const localCache = (() => { try { return JSON.parse(localStorage.getItem(SK.k))||[]; } catch(e){ return []; } })();
-      keys = kRows.map(r => {
-        const mapped = rowToKey(r);
-        if(!mapped.foto) {
-          const local = localCache.find(lk => lk.id === r.id);
-          if(local?.foto) mapped.foto = local.foto;
-        }
-        return mapped;
-      });
-      localStorage.setItem(SK.k, JSON.stringify(keys));
-    } else if(kRows&&kRows.length===0) {
-      await syncKeysToSupabase(keys);
+    const lastTs = localStorage.getItem(SK_SYNC_TS);
+    // Registra o momento ANTES da query — garante que nenhuma mudança
+    // que aconteça durante o fetch seja perdida na próxima sincronização
+    const queryStartTs = new Date().toISOString();
+
+    if(lastTs) {
+      // ── DELTA: só linhas alteradas desde o último sync ──────────
+      const [kChanged] = await Promise.all([
+        sbFetch("keys","GET",null,
+          `?select=id,loc,codigo,status,responsavel,data_ret,data_dev,obs,endereco,updated_at&updated_at=gt.${lastTs}&order=loc.asc`)
+      ]);
+      if(kChanged && kChanged.length) {
+        kChanged.forEach(r => {
+          const mapped = rowToKey(r);
+          const idx = keys.findIndex(k => k.id === mapped.id);
+          if(!mapped.foto && idx >= 0 && keys[idx].foto) mapped.foto = keys[idx].foto;
+          if(idx >= 0) keys[idx] = mapped;
+          else keys.push(mapped);
+        });
+        keys.sort((a,b) => a.loc.localeCompare(b.loc));
+        localStorage.setItem(SK.k, JSON.stringify(keys));
+        console.log(`[Sync] Delta login: ${kChanged.length} chave(s) atualizada(s)`);
+      } else {
+        console.log('[Sync] Nenhuma mudança desde o último acesso — usando cache local');
+      }
+      // Usuários: delta só se tabela tem updated_at, senão hash-check rápido
+      sbFetch("users","GET",null,`?select=*&updated_at=gt.${lastTs}`)
+        .then(uChanged => {
+          if(uChanged && uChanged.length) {
+            uChanged.forEach(r => {
+              const mapped = rowToUser(r);
+              const idx = users.findIndex(u => u.id === mapped.id);
+              if(idx >= 0) users[idx] = mapped; else users.push(mapped);
+            });
+            localStorage.setItem(SK.u, JSON.stringify(users));
+          }
+        }).catch(()=>{});
+    } else {
+      // ── PRIMEIRA VEZ no dispositivo: busca tudo ─────────────────
+      console.log('[Sync] Primeiro acesso — carregando dados completos');
+      const [kRows, uRows] = await Promise.all([
+        sbFetch("keys","GET",null,"?select=id,loc,codigo,status,responsavel,data_ret,data_dev,obs,endereco,updated_at&order=loc.asc"),
+        sbFetch("users","GET",null,"?select=*")
+      ]);
+      if(kRows && kRows.length) {
+        const localCache = (() => { try { return JSON.parse(localStorage.getItem(SK.k))||[]; } catch(e){ return []; } })();
+        keys = kRows.map(r => {
+          const mapped = rowToKey(r);
+          if(!mapped.foto) {
+            const local = localCache.find(lk => lk.id === r.id);
+            if(local?.foto) mapped.foto = local.foto;
+          }
+          return mapped;
+        });
+        localStorage.setItem(SK.k, JSON.stringify(keys));
+      } else if(kRows && kRows.length === 0) {
+        await syncKeysToSupabase(keys);
+      }
+      if(uRows && uRows.length) {
+        users = uRows.map(rowToUser);
+        localStorage.setItem(SK.u, JSON.stringify(users));
+      } else if(uRows && uRows.length === 0) {
+        for(const u of users) await sbFetch("users","POST",[userToRow(u)]);
+      }
     }
-    if(uRows&&uRows.length) {
-      users = uRows.map(rowToUser);
-      localStorage.setItem(SK.u, JSON.stringify(users));
-    } else if(uRows&&uRows.length===0) {
-      for(const u of users) await sbFetch("users","POST",[userToRow(u)]);
-    }
+
+    // Marca timestamp do sync bem-sucedido
+    localStorage.setItem(SK_SYNC_TS, queryStartTs);
+
     // Histórico em background — não bloqueia a tela
     sbFetch("history","GET",null,"?select=*&order=ts.desc&limit=200")
       .then(hRows => {
-        if(hRows&&hRows.length) {
+        if(hRows && hRows.length) {
           hist = hRows.map(r=>({...r, changes:r.changes||[], ts:r.ts}));
           localStorage.setItem(SK.h, JSON.stringify(hist));
           renderGHist();
@@ -1311,6 +1371,18 @@ async function lazyLoadFoto(keyId) {
     }
   } catch(e) { console.warn("[lazyLoadFoto]", e.message); }
   return null;
+}
+
+// Força sincronização completa (reseta o lastSyncTs)
+async function forceFullSync(btn) {
+  if(btn) { btn.disabled = true; btn.textContent = 'Sincronizando...'; }
+  localStorage.removeItem(SK_SYNC_TS); // reseta o timestamp → próximo load baixa tudo
+  await loadFromSupabase();
+  renderList();
+  if(can("viewAdmin")) { renderGer(); renderGHist(); }
+  if(can("manageUsers")) renderUsers();
+  if(btn) { btn.disabled = false; btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> Forçar sincronização completa`; }
+  showSyncIndicator();
 }
 
 // ══════════════════════════════════════════
@@ -1592,10 +1664,13 @@ async function pollSync() {
   if(!session || !SUPA_URL || !SUPA_KEY) return;
   if(_editingKeyId) return;
   try {
-    // Buscar APENAS chaves alteradas desde o último poll (inteligente)
-    const sinceIso = new Date(Date.now() - 15000).toISOString();
+    // Usa o lastSyncTs real — captura TUDO que mudou desde o último sync
+    // Fallback de 90s se por algum motivo não houver ts salvo
+    const lastTs = localStorage.getItem(SK_SYNC_TS) || new Date(Date.now() - 90000).toISOString();
+    const queryStartTs = new Date().toISOString();
+
     const changed = await sbFetch("keys","GET",null,
-      `?select=id,loc,codigo,status,responsavel,data_ret,data_dev,obs,endereco,updated_at&updated_at=gt.${sinceIso}`
+      `?select=id,loc,codigo,status,responsavel,data_ret,data_dev,obs,endereco,updated_at&updated_at=gt.${lastTs}`
     );
     if(changed && changed.length) {
       const mkOpen = document.getElementById("mk")?.classList.contains("open");
@@ -1604,7 +1679,6 @@ async function pollSync() {
       changed.forEach(r => {
         const updated = rowToKey(r);
         const idx = keys.findIndex(k => k.id === updated.id);
-        // Não sobrescrever chave aberta no modal
         if(mkOpen && mkTitle.includes(updated.loc)) return;
         if(!updated.foto && idx >= 0 && keys[idx].foto) updated.foto = keys[idx].foto;
         if(idx >= 0) { keys[idx] = updated; didChange = true; }
@@ -1615,9 +1689,12 @@ async function pollSync() {
         localStorage.setItem(SK.k, JSON.stringify(keys));
         renderList(); renderGer(); updateNotifBar();
         showSyncIndicator();
-        console.log(`[Sync] ${changed.length} chave(s) atualizada(s)`);
+        console.log(`[Poll] ${changed.length} chave(s) atualizada(s)`);
       }
     }
+    // Atualiza timestamp após sync bem-sucedido
+    localStorage.setItem(SK_SYNC_TS, queryStartTs);
+
     // Verificar novos usuários (menos frequente — a cada 3 polls)
     if(!pollSync._userCounter) pollSync._userCounter = 0;
     pollSync._userCounter++;
@@ -1635,7 +1712,7 @@ async function pollSync() {
       }
     }
   } catch(e) {
-    console.warn("[Sync] Erro:", e.message);
+    console.warn("[Poll] Erro:", e.message);
   }
 }
 
@@ -1750,7 +1827,7 @@ function renderList() {
   el.innerHTML = filtered.map(k => {
     const idx=keys.indexOf(k), c=bc(k.status);
     const sub=k.status==="INDISPONÍVEL"&&k.responsavel?`${k.codigo?k.codigo+" · ":""}${k.responsavel}`:k.endereco?`${k.codigo?k.codigo+" · ":""}${k.endereco}`:k.codigo||(k.dataRet?`Saída: ${fd(k.dataRet)}`:"");
-    const thumb = k.foto ? `<img class="kthumb" src="${k.foto}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="kicon ki-${c}" style="display:none">${IK}</div>` : `<div class="kicon ki-${c}">${IK}</div>`;
+    const thumb = `<div class="kicon ki-${c}">${IK}</div>`;
     return `<div class="kcard" onclick="openKey(${idx})">${thumb}<div class="kinf"><div class="kloc">${k.loc}</div><div class="ksub">${sub||bl(k.status)}</div></div><span class="bdg b${c}">${bl(k.status)}</span>${IC}</div>`;
   }).join("");
 }
@@ -3411,6 +3488,8 @@ function showATab(id,btn){
   if(csvSec) csvSec.style.display = (id==='cfg' && session?.role==='cadastro') ? 'block' : 'none';
   const migrarSec = document.getElementById('migrar-fotos-section');
   if(migrarSec) migrarSec.style.display = (id==='cfg' && session?.role==='cadastro') ? 'block' : 'none';
+  const syncSec = document.getElementById('sync-section');
+  if(syncSec) syncSec.style.display = (id==='cfg' && session?.role==='cadastro') ? 'block' : 'none';
   // Reset hist search/filter when switching to hist tab
   if(id==='hist'){
     curHStatus='todos';
@@ -3539,13 +3618,18 @@ async function handleRealtimeChange(table, eventType, change) {
     }
 
   } else if(table === "users") {
-    // Recarregar users do Supabase
-    const uRows = await sbFetch("users","GET",null,"?select=*").catch(()=>null);
-    if(uRows && uRows.length) {
-      users = uRows.map(rowToUser);
-      localStorage.setItem(SK.u, JSON.stringify(users));
-      if(can("manageUsers")) renderUsers();
+    // Usa o record do payload — sem query extra ao banco
+    const record = change.record || change.old_record;
+    if(eventType === "DELETE" && record) {
+      users = users.filter(u => u.id !== record.id);
+    } else if(record) {
+      const mapped = rowToUser(record);
+      const idx = users.findIndex(u => u.id === mapped.id);
+      if(idx >= 0) users[idx] = mapped;
+      else if(eventType === "INSERT") users.push(mapped);
     }
+    localStorage.setItem(SK.u, JSON.stringify(users));
+    if(can("manageUsers")) renderUsers();
   }
 
   // Indicador visual discreto de atualização
