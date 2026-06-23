@@ -1028,12 +1028,12 @@ function keyToRow(k) {
     updated_at: new Date().toISOString() };
 }
 function rowToKey(r) {
-  // Ao carregar do Supabase, verificar se há foto local mais recente (b64)
+  // Foto NÃO é mais incluída nas queries de listagem/polling (redução de egress).
+  // Fonte de foto: 1) campo foto do banco se vier (upload direto); 2) cache localStorage; 3) vazio
   const localKeys = (() => { try { return JSON.parse(localStorage.getItem(SK.k))||[]; } catch(e){ return []; } })();
   const localKey = localKeys.find(k=>k.id===r.id);
-  // Prioridade: URL do Storage > b64 local > vazio
-  let foto = r.foto || "";
-  if(!foto && localKey?.foto) foto = localKey.foto; // recupera b64 local se Supabase não tem
+  let foto = r.foto || ""; // será vazio na maioria das queries (foto excluída do select)
+  if(!foto && localKey?.foto) foto = localKey.foto; // recupera do cache local (b64 ou URL)
   return { id:r.id, loc:r.loc, codigo:r.codigo||"", status:r.status||"LIVRE",
     responsavel:r.responsavel||"", dataRet:r.data_ret||"", dataDev:r.data_dev||"",
     obs:r.obs||"", foto, endereco:r.endereco||"" };
@@ -1100,7 +1100,7 @@ async function loadFromSupabase() {
   try {
     // Keys + Users em paralelo (não espera um terminar para começar o outro)
     const [kRows, uRows] = await Promise.all([
-      sbFetch("keys","GET",null,"?select=*&order=loc.asc"),
+      sbFetch("keys","GET",null,"?select=id,loc,codigo,status,responsavel,data_ret,data_dev,obs,endereco,updated_at&order=loc.asc"),
       sbFetch("users","GET",null,"?select=*")
     ]);
     if(kRows&&kRows.length) {
@@ -1269,6 +1269,24 @@ async function uploadFoto(file, keyId) {
   }
 }
 
+// Lazy load de foto — busca do banco APENAS ao abrir a chave, se não há cache local
+// Evita baixar todas as fotos no load inicial (grande economia de egress)
+async function lazyLoadFoto(keyId) {
+  if(!SUPA_URL || !SUPA_KEY) return;
+  try {
+    const rows = await sbFetch("keys","GET",null,`?select=id,foto&id=eq.${keyId}`);
+    if(rows && rows[0] && rows[0].foto) {
+      const idx = keys.findIndex(k => k.id === keyId);
+      if(idx >= 0 && !keys[idx].foto) {
+        keys[idx].foto = rows[0].foto;
+        localStorage.setItem(SK.k, JSON.stringify(keys));
+        return rows[0].foto;
+      }
+    }
+  } catch(e) { console.warn("[lazyLoadFoto]", e.message); }
+  return null;
+}
+
 // Deleta foto antiga do Storage (fire-and-forget)
 function deleteFoto(url) {
   if(!SUPA_URL||!SUPA_KEY||!url||!url.includes("chave-fotos")) return;
@@ -1413,8 +1431,8 @@ function openFotoFullscreen(src) {
 // ══════════════════════════════════════════
 function startPolling() {
   if(_pollingInterval) clearInterval(_pollingInterval);
-  _pollingInterval = setInterval(pollSync, 10000);
-  console.log("[Polling] Iniciado — sincroniza a cada 10s");
+  _pollingInterval = setInterval(pollSync, 60000);
+  console.log("[Polling] Iniciado — sincroniza a cada 60s (Realtime cobre o restante)");
 }
 
 function stopPolling() {
@@ -1428,7 +1446,7 @@ async function pollSync() {
     // Buscar APENAS chaves alteradas desde o último poll (inteligente)
     const sinceIso = new Date(Date.now() - 15000).toISOString();
     const changed = await sbFetch("keys","GET",null,
-      `?select=id,loc,codigo,status,responsavel,data_ret,data_dev,obs,foto,endereco,updated_at&updated_at=gt.${sinceIso}`
+      `?select=id,loc,codigo,status,responsavel,data_ret,data_dev,obs,endereco,updated_at&updated_at=gt.${sinceIso}`
     );
     if(changed && changed.length) {
       const mkOpen = document.getElementById("mk")?.classList.contains("open");
@@ -1592,8 +1610,18 @@ function renderList() {
 // KEY SHEET (view)
 // ══════════════════════════════════════════
 let vidx=null;
-function openKey(idx) {
+async function openKey(idx) {
   vidx=idx; const k=keys[idx];
+  // Lazy load da foto se não estiver em cache (busca do banco só quando abre a chave)
+  if(!k.foto) {
+    lazyLoadFoto(k.id).then(fotoUrl => {
+      if(fotoUrl && vidx === idx) {
+        // Atualiza a imagem no modal se ainda estiver aberto na mesma chave
+        const imgEl = document.querySelector('#mk-b img[style*="height:140px"]');
+        if(imgEl) { imgEl.src = fotoUrl; imgEl.style.display = "block"; }
+      }
+    });
+  }
   document.getElementById("mk-t").textContent = "Chave — "+k.loc;
   const kh = hist.filter(h=>h.loc===k.loc && !['EMAIL','CRIAÇÃO'].includes(h.tipo)).slice(0,1);
   const lastEntry = kh[0];
