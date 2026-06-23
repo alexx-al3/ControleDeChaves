@@ -684,6 +684,18 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
             </button>
           </div>
         </div>
+        <!-- Migração de fotos para Storage — só Cadastro -->
+        <div id="migrar-fotos-section" style="display:none">
+          <p class="asec" style="margin-top:16px">Fotos — Migrar para Storage</p>
+          <div class="cpform">
+            <p class="hint">Move as fotos armazenadas como base64 no banco para o Supabase Storage, reduzindo o egress.<br><strong>Antes de migrar:</strong> no Supabase Dashboard, confirme que o bucket <code>chave-fotos</code> existe e está configurado como <strong>público</strong>.</p>
+            <div id="migrar-status" style="margin-bottom:8px"></div>
+            <button id="migrar-btn" class="addbtn" onclick="migrarFotosParaStorage()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Migrar fotos para Storage
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1224,7 +1236,7 @@ function compressImage(file, maxPx=800, quality=0.75) {
 async function uploadFoto(file, keyId) {
   if(!SUPA_URL||!SUPA_KEY) return null;
   try {
-    // Comprime para máx 600px, qualidade 0.65 → garante < 100KB para o banco
+    // Comprime para máx 600px, qualidade 0.65
     const blob = await compressImage(file, 600, 0.65);
     // Converte blob comprimido para base64
     const b64 = await new Promise(res2 => {
@@ -1232,20 +1244,19 @@ async function uploadFoto(file, keyId) {
       r.onload = e => res2(e.target.result);
       r.readAsDataURL(blob);
     });
-    // Salva base64 direto no banco — SEMPRE funciona independente do Storage
+    // 1. Salva b64 IMEDIATAMENTE no localStorage + banco como segurança
     if(keyId && keys) {
       const ki = keys.findIndex(k => k.id === keyId);
       if(ki >= 0) {
         keys[ki].foto = b64;
         saveAll();
-        // Sincroniza b64 com Supabase imediatamente
         await sbFetch("keys","POST",[keyToRow(keys[ki])]);
-        console.log("[Foto] B64 salvo no banco OK");
+        console.log("[Foto] B64 salvo como fallback OK");
       }
     }
-    // Tenta upload no Storage em paralelo (URL mais eficiente)
+    // 2. Tenta upload no Storage
     const path = `fotos/${keyId}.jpg`;
-    const res = await fetch(`${SUPA_URL}/storage/v1/object/chave-fotos/${path}`, {
+    const uploadRes = await fetch(`${SUPA_URL}/storage/v1/object/chave-fotos/${path}`, {
       method: "POST",
       headers: {
         "apikey": SUPA_KEY,
@@ -1255,14 +1266,29 @@ async function uploadFoto(file, keyId) {
       },
       body: blob
     });
-    if(res.ok) {
-      const publicUrl = `${SUPA_URL}/storage/v1/object/public/chave-fotos/${path}?v=${Date.now()}`;
-      console.log("[Foto] Storage URL OK →", publicUrl);
-      return publicUrl; // substitui b64 pela URL
+    if(!uploadRes.ok) {
+      console.warn("[Foto] Upload no Storage falhou:", uploadRes.status, "— usando b64");
+      return b64;
     }
-    // Storage falhou mas b64 já está no banco — foto segura
-    console.warn("[Foto] Storage falhou, usando b64 do banco");
-    return b64; // retorna b64 como URL — será exibido normalmente
+    // 3. URL estável sem ?v=timestamp (permite cache CDN)
+    const publicUrl = `${SUPA_URL}/storage/v1/object/public/chave-fotos/${path}`;
+    // 4. Verifica se a URL realmente carrega antes de comitar (evita o problema anterior)
+    const headCheck = await fetch(publicUrl, { method:"HEAD" }).catch(()=>null);
+    if(!headCheck?.ok) {
+      console.warn("[Foto] URL do Storage inacessível (bucket privado?):", headCheck?.status, "— mantendo b64");
+      return b64; // b64 já está salvo — foto segura
+    }
+    // 5. URL verificada e acessível → substitui b64 pela URL no banco
+    if(keyId && keys) {
+      const ki = keys.findIndex(k => k.id === keyId);
+      if(ki >= 0) {
+        keys[ki].foto = publicUrl;
+        saveAll();
+        await sbFetch("keys","POST",[keyToRow(keys[ki])]);
+        console.log("[Foto] Storage URL confirmada e salva →", publicUrl);
+      }
+    }
+    return publicUrl;
   } catch(e) {
     console.warn("[uploadFoto]", e.message);
     return null;
@@ -1285,6 +1311,129 @@ async function lazyLoadFoto(keyId) {
     }
   } catch(e) { console.warn("[lazyLoadFoto]", e.message); }
   return null;
+}
+
+// ══════════════════════════════════════════
+// MIGRAÇÃO DE FOTOS BASE64 → SUPABASE STORAGE
+// ══════════════════════════════════════════
+async function migrarFotosParaStorage() {
+  const btn = document.getElementById('migrar-btn');
+  const statusEl = document.getElementById('migrar-status');
+  if(btn) { btn.disabled = true; btn.textContent = 'Aguarde...'; }
+
+  const setStatus = (html) => { if(statusEl) statusEl.innerHTML = html; };
+
+  // 1. Verifica acesso ao Storage com upload de teste
+  setStatus(`<p style="font-size:13px;color:var(--tx2)">🔍 Verificando acesso ao bucket...</p>`);
+  const testPath = `preflight_${Date.now()}.txt`;
+  const testUpload = await fetch(`${SUPA_URL}/storage/v1/object/chave-fotos/${testPath}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`,
+      'Content-Type': 'text/plain', 'x-upsert': 'true'
+    },
+    body: 'ok'
+  }).catch(() => null);
+
+  if(!testUpload?.ok) {
+    setStatus(`<p style="background:var(--cr-bg);color:var(--cr);padding:10px 12px;border-radius:8px;font-size:13px;line-height:1.8">
+      ❌ <strong>Bucket inacessível para upload (${testUpload?.status||'erro de rede'})</strong><br>
+      No Supabase Dashboard → Storage → chave-fotos:<br>
+      • Confirme que o bucket existe<br>
+      • Policies → adicione policy para <code>anon</code> com permissão <code>INSERT</code><br>
+      • Marque o bucket como <strong>público</strong> (Public bucket)
+    </p>`);
+    if(btn) { btn.disabled = false; btn.textContent = 'Tentar novamente'; }
+    return;
+  }
+  // Limpa arquivo de teste
+  fetch(`${SUPA_URL}/storage/v1/object/chave-fotos/${testPath}`, {
+    method: 'DELETE',
+    headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}` }
+  }).catch(()=>{});
+
+  // 2. Verifica se URL pública é acessível
+  const testPubUrl = `${SUPA_URL}/storage/v1/object/public/chave-fotos/${testPath}`;
+  // (arquivo já deletado, mas verificamos se bucket é público tentando HEAD numa URL qualquer)
+  const bucketCheck = await fetch(`${SUPA_URL}/storage/v1/object/public/chave-fotos/`, { method: 'HEAD' }).catch(()=>null);
+  // 403 = bucket existe mas privado | 404 = público mas arquivo não existe (OK) | outros = erro
+  if(bucketCheck?.status === 403) {
+    setStatus(`<p style="background:var(--am-bg);color:var(--am);padding:10px 12px;border-radius:8px;font-size:13px;line-height:1.8">
+      ⚠️ <strong>Bucket não está público</strong><br>
+      No Supabase Dashboard → Storage → chave-fotos:<br>
+      • Clique em <strong>Edit bucket</strong> → ative <strong>Public bucket</strong><br>
+      Sem isso, as URLs não carregarão para outros dispositivos.
+    </p>`);
+    if(btn) { btn.disabled = false; btn.textContent = 'Tentar novamente'; }
+    return;
+  }
+
+  // 3. Conta fotos em b64
+  const b64Keys = keys.filter(k => k.foto && k.foto.startsWith('data:'));
+  if(!b64Keys.length) {
+    setStatus(`<p style="background:var(--gn-bg);color:var(--gn);padding:10px 12px;border-radius:8px;font-size:13px;font-weight:600">
+      ✅ Nenhuma foto em base64 encontrada — todas já estão no Storage!
+    </p>`);
+    if(btn) { btn.disabled = false; btn.textContent = 'Migrar fotos para Storage'; }
+    return;
+  }
+
+  // 4. Migra uma por uma
+  let ok = 0, fail = 0;
+  for(let i = 0; i < b64Keys.length; i++) {
+    const k = b64Keys[i];
+    setStatus(`<p style="font-size:13px;color:var(--tx2)">⏳ Migrando ${i+1}/${b64Keys.length}: <strong>${k.loc}</strong>...</p>
+      <div style="background:var(--bd);border-radius:4px;height:6px;margin-top:6px"><div style="background:var(--nv);height:6px;border-radius:4px;width:${Math.round((i/b64Keys.length)*100)}%;transition:width .3s"></div></div>`);
+    try {
+      // Converte b64 → blob
+      const fetchRes = await fetch(k.foto);
+      const blob = await fetchRes.blob();
+      const jpegBlob = blob.type === 'image/jpeg' ? blob :
+        await new Promise(res => {
+          const img = new Image(); img.onload = () => {
+            const c = document.createElement('canvas');
+            c.width = img.width; c.height = img.height;
+            c.getContext('2d').drawImage(img,0,0);
+            c.toBlob(b => res(b), 'image/jpeg', 0.85);
+          };
+          img.src = k.foto;
+        });
+      // Upload para Storage
+      const path = `fotos/${k.id}.jpg`;
+      const upRes = await fetch(`${SUPA_URL}/storage/v1/object/chave-fotos/${path}`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPA_KEY, 'Authorization': `Bearer ${SUPA_KEY}`,
+          'Content-Type': 'image/jpeg', 'x-upsert': 'true'
+        },
+        body: jpegBlob
+      });
+      if(!upRes.ok) { console.warn(`[Migração] Upload falhou ${k.loc}:`, upRes.status); fail++; continue; }
+      // URL estável
+      const url = `${SUPA_URL}/storage/v1/object/public/chave-fotos/${path}`;
+      // Verificação HEAD
+      const headRes = await fetch(url, { method: 'HEAD' }).catch(()=>null);
+      if(!headRes?.ok) { console.warn(`[Migração] URL inacessível ${k.loc}:`, headRes?.status); fail++; continue; }
+      // Salva URL no banco e localStorage
+      const idx = keys.findIndex(kk => kk.id === k.id);
+      if(idx >= 0) {
+        keys[idx].foto = url;
+        await sbFetch("keys","POST",[keyToRow(keys[idx])]);
+        localStorage.setItem(SK.k, JSON.stringify(keys));
+        ok++;
+      }
+    } catch(e) {
+      console.warn(`[Migração] Erro ${k.loc}:`, e.message);
+      fail++;
+    }
+  }
+
+  setStatus(`<p style="background:var(--gn-bg);color:var(--gn);padding:10px 12px;border-radius:8px;font-size:13px;line-height:1.8;font-weight:600">
+    ✅ Migração concluída!<br>
+    <span style="font-weight:400">${ok} foto${ok!==1?'s':''} migrada${ok!==1?'s':''} para Storage${fail?` · <span style="color:var(--cr)">${fail} falhou(aram) — mantidas em base64</span>`:''}</span>
+  </p>`);
+  renderList(); renderGer();
+  if(btn) { btn.disabled = false; btn.textContent = 'Migrar fotos para Storage'; }
 }
 
 // Deleta foto antiga do Storage (fire-and-forget)
@@ -1601,7 +1750,7 @@ function renderList() {
   el.innerHTML = filtered.map(k => {
     const idx=keys.indexOf(k), c=bc(k.status);
     const sub=k.status==="INDISPONÍVEL"&&k.responsavel?`${k.codigo?k.codigo+" · ":""}${k.responsavel}`:k.endereco?`${k.codigo?k.codigo+" · ":""}${k.endereco}`:k.codigo||(k.dataRet?`Saída: ${fd(k.dataRet)}`:"");
-    const thumb = k.foto ? `<img class="kthumb" src="${k.foto}" alt="">` : `<div class="kicon ki-${c}">${IK}</div>`;
+    const thumb = k.foto ? `<img class="kthumb" src="${k.foto}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="kicon ki-${c}" style="display:none">${IK}</div>` : `<div class="kicon ki-${c}">${IK}</div>`;
     return `<div class="kcard" onclick="openKey(${idx})">${thumb}<div class="kinf"><div class="kloc">${k.loc}</div><div class="ksub">${sub||bl(k.status)}</div></div><span class="bdg b${c}">${bl(k.status)}</span>${IC}</div>`;
   }).join("");
 }
@@ -1630,7 +1779,7 @@ async function openKey(idx) {
   const devDate = lastDevH?.changes?.find(c=>c.campo==="Data devolução")?.novo || k.dataDev;
   const histHTML = lastEntry ? `<div class="fld" style="gap:6px"><label>Última movimentação</label><div style="background:var(--s2);border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:var(--tx);margin-bottom:2px">${lastEntry.usuario||"—"}</div><div style="font-size:11.5px;color:var(--tx2)">${bl(lastEntry.status)||"—"}${lastEntry.status==="INDISPONÍVEL"&&lastEntry.responsavel?` · <span style="color:var(--tx3)">${lastEntry.responsavel}</span>`:""}${devDate&&lastEntry.status!=="INDISPONÍVEL"?` · <span style="color:var(--tx3)">Dev: ${fd(devDate)}</span>`:""}</div></div><span style="font-size:11px;color:var(--tx3);white-space:nowrap;flex-shrink:0">${fts(lastEntry.ts).split(" ")[0]}</span></div></div>` : `<p style="font-size:12px;color:var(--tx3);text-align:center;padding:8px 0">Sem movimentações.</p>`;
   document.getElementById("mk-b").innerHTML = `
-    ${k.foto?`<img src="${k.foto}" style="width:100%;height:140px;object-fit:cover;border-radius:10px;border:1px solid var(--bd);cursor:zoom-in" onclick="openFotoFullscreen('${k.foto}')" title="Toque para ampliar">`:""} 
+    ${k.foto?`<img src="${k.foto}" style="width:100%;height:140px;object-fit:cover;border-radius:10px;border:1px solid var(--bd);cursor:zoom-in" onclick="openFotoFullscreen('${k.foto}')" onerror="this.style.display='none'" title="Toque para ampliar">`:""} 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       ${[["Localização",`<span style="font-family:var(--m);font-weight:600">${k.loc}</span>`],["Status",`<span class="bdg b${bc(k.status)}">${bl(k.status)}</span>`],["Código",k.codigo||"—"],["Responsável",k.responsavel||"—"],["Data saída",fd(k.dataRet)],["Devolução",fd(k.dataDev)]].map(([l,v])=>`<div style="background:var(--s2);border-radius:8px;padding:9px 11px"><div style="font-size:10.5px;color:var(--tx3);margin-bottom:2px">${l}</div><div style="font-size:13px;font-weight:500">${v}</div></div>`).join("")}
       ${k.endereco?`<div style="background:var(--s2);border-radius:8px;padding:9px 11px;grid-column:1/-1;border-left:3px solid var(--or)"><div style="font-size:10.5px;color:var(--tx3);margin-bottom:2px">Endereço</div><div style="font-size:13px;font-weight:500">${k.endereco}</div></div>`:""}
@@ -1889,7 +2038,7 @@ function renderGer() {
   if(!filtered.length){el.innerHTML=`<div style="padding:16px;text-align:center;font-size:13px;color:var(--tx3)">Nenhuma chave.</div>`;return;}
   const mkRow=k=>{
     const idx=keys.indexOf(k),c=bc(k.status);
-    const thumb=k.foto?`<img class="ath" src="${k.foto}" alt="">`:`<div class="aico">${IK}</div>`;
+    const thumb=k.foto?`<img class="ath" src="${k.foto}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="aico" style="display:none">${IK}</div>`:`<div class="aico">${IK}</div>`;
     return`<div class="arow" style="border-bottom:1px solid var(--bd)">${thumb}<div class="arow-m"><div class="arow-l">${k.loc}</div><div class="arow-s"><span class="bdg b${c}" style="font-size:10px;padding:1px 6px">${bl(k.status)}</span>${k.codigo?" "+k.codigo:""}</div></div><div class="row-acts">${can("editKey")?`<button class="ibtn" onclick="openEdit(${idx})">${IE}</button>`:""}<button class="ibtn" onclick="openRename(${idx})">${IR}</button>${can("deleteKey")?`<button class="ibtn dng" onclick="confirmDel(${idx})">${ID}</button>`:""}</div></div>`;
   };
   // Se busca ativa → lista plana
@@ -3260,6 +3409,8 @@ function showATab(id,btn){
   // Show CSV export only for cadastro profile on cfg tab
   const csvSec = document.getElementById('csv-section');
   if(csvSec) csvSec.style.display = (id==='cfg' && session?.role==='cadastro') ? 'block' : 'none';
+  const migrarSec = document.getElementById('migrar-fotos-section');
+  if(migrarSec) migrarSec.style.display = (id==='cfg' && session?.role==='cadastro') ? 'block' : 'none';
   // Reset hist search/filter when switching to hist tab
   if(id==='hist'){
     curHStatus='todos';
