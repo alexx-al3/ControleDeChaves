@@ -12,7 +12,7 @@ module.exports = async function handler(req, res) {
     return res.status(200).json({ ok: true, simulated: true });
   }
 
-  const { subject, html, pdfBase64, pdfName } = req.body;
+  const { subject, html, pdfBase64, pdfName, fotoBase64, fotoName } = req.body;
   const gmailUser = (process.env.GMAIL_USER || "").trim();
   const gmailPass = (process.env.GMAIL_PASS || "").replace(/\s/g, "");
   const emailDest = (process.env.EMAIL_DEST || gmailUser).trim();
@@ -24,12 +24,20 @@ module.exports = async function handler(req, res) {
     auth: { user: gmailUser, pass: gmailPass },
   });
 
+  const attachments = [];
+  if (pdfBase64) attachments.push({ filename: pdfName||"comprovante.pdf", content: pdfBase64, encoding: "base64" });
+  if (fotoBase64) {
+    // Remove o prefixo "data:image/jpeg;base64," se presente
+    const fotoData = fotoBase64.replace(/^data:image\/\w+;base64,/, "");
+    attachments.push({ filename: fotoName||"foto-chave.jpg", content: fotoData, encoding: "base64", contentType: "image/jpeg" });
+  }
+
   const mailOptions = {
     from: `"ACRC Imóveis — Controle de Chaves" <${gmailUser}>`,
     to: emailDest,
     subject: subject || "Relatório — ACRC Imóveis",
     html,
-    attachments: pdfBase64 ? [{ filename: pdfName||"comprovante.pdf", content: pdfBase64, encoding: "base64" }] : [],
+    attachments,
   };
 
   try {
