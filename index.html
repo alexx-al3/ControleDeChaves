@@ -966,6 +966,19 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
         <button onclick="closeAcaoScr()" style="font-size:12px;color:var(--bl);background:var(--bl-bg);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-family:var(--f);font-weight:500">Trocar</button>
       </div>
     </div>
+    <!-- Foto da movimentação (opcional) — só vai no e-mail, nunca ao banco -->
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">
+        Foto da Chave <span id="acao-foto-badge" style="font-size:10px;font-weight:500;color:var(--tx3);text-transform:none;letter-spacing:0">(opcional — enviada só no e-mail)</span>
+      </div>
+      <img id="acao-pp" class="phprev" src="" alt="" style="display:none;width:100%;max-height:180px;object-fit:cover;border-radius:10px;border:1px solid var(--bd);margin-bottom:8px">
+      <div class="phup" id="acao-pua">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span>Tirar foto ou escolher da galeria</span>
+        <input type="file" accept="image/*" capture="environment" onchange="handleAcaoPhoto(event)">
+      </div>
+      <button class="phrem" id="acao-prb" onclick="removeAcaoPhoto()" style="display:none">Remover foto</button>
+    </div>
     <!-- Action buttons -->
     <div class="acao-btns">
       <button class="acao-ret-btn" id="acao-ret-btn" onclick="confirmarRetiradaInterna()">
@@ -1756,10 +1769,8 @@ function applyStatusRules(k, prevStatus) {
 // ══════════════════════════════════════════
 // AUTO EMAIL REPORT
 // ══════════════════════════════════════════
-async function sendAutoEmail(subject, changes, k, pdfBase64=null, pdfName=null) {
-  // Sempre chama a API — o servidor decide o destino via ENV vars
-  // cfg.emailDest é opcional (só usado para exibição local)
-  const htmlBody = buildReportHTML(subject, changes, k);
+async function sendAutoEmail(subject, changes, k, pdfBase64=null, pdfName=null, fotoBase64=null) {
+  const htmlBody = buildReportHTML(subject, changes, k, fotoBase64);
   try {
     const res = await fetch("/api/send-email", {
       method:"POST",
@@ -1778,8 +1789,14 @@ async function sendAutoEmail(subject, changes, k, pdfBase64=null, pdfName=null) 
     console.warn("[Email]", e.message);
   }
 }
-function buildReportHTML(subject, changes, k) {
+function buildReportHTML(subject, changes, k, fotoBase64=null) {
   const rows = changes.map(c => `<tr><td style="padding:6px 10px;border:1px solid #e4e4e0;font-family:monospace;font-size:13px">${c.campo}</td><td style="padding:6px 10px;border:1px solid #e4e4e0;font-size:13px;color:#a12828">${c.anterior||"—"}</td><td style="padding:6px 10px;border:1px solid #e4e4e0;font-size:13px;color:#257a35">${c.novo||"—"}</td></tr>`).join("");
+  const fotoHTML = fotoBase64 ? `
+  <div style="margin-top:20px">
+    <h4 style="font-size:13px;color:#525250;margin:0 0 10px;text-transform:uppercase;letter-spacing:.05em">Foto da Chave</h4>
+    <img src="${fotoBase64}" alt="Foto da chave ${k.loc}" style="max-width:100%;border-radius:10px;border:1px solid #e4e4e0;display:block">
+    <p style="font-size:11px;color:#969692;margin:6px 0 0">Foto registrada no momento da movimentação — não armazenada no sistema.</p>
+  </div>` : '';
   return `<!DOCTYPE html><html><body style="font-family:'DM Sans',Arial,sans-serif;color:#191917;max-width:600px;margin:0 auto;padding:20px">
 <div style="background:linear-gradient(135deg,#1B2E4B,#243d61);padding:20px 24px;border-radius:12px 12px 0 0">
   <h2 style="color:#fff;margin:0;font-size:18px">ACRC Imóveis — Controle de Chaves</h2>
@@ -1795,6 +1812,7 @@ function buildReportHTML(subject, changes, k) {
   </table>
   ${rows ? `<h4 style="font-size:13px;color:#525250;margin:0 0 8px;text-transform:uppercase;letter-spacing:.05em">Campos alterados</h4>
   <table style="width:100%;border-collapse:collapse"><tr style="background:#f7f7f5"><th style="padding:6px 10px;border:1px solid #e4e4e0;font-size:11px;text-align:left">CAMPO</th><th style="padding:6px 10px;border:1px solid #e4e4e0;font-size:11px;text-align:left">ANTERIOR</th><th style="padding:6px 10px;border:1px solid #e4e4e0;font-size:11px;text-align:left">NOVO</th></tr>${rows}</table>` : ""}
+  ${fotoHTML}
 </div>
 <p style="font-size:11px;color:#969692;text-align:center;margin-top:12px">ACRC Imóveis · www.acrcimoveis.com.br · Blumenau/SC</p>
 </body></html>`;
@@ -3244,6 +3262,9 @@ function selectInternalUser(idx) {
 // ══════════════════════════════════════════
 let _acaoKeyIdx = null; // índice da chave sendo retirada/devolvida
 let _acaoUserIdx = null; // índice do usuário selecionado
+let _acaoFoto = null; // foto da movimentação — só em memória, nunca vai ao banco
+// Mude para true para tornar a foto obrigatória na retirada/devolução
+const FOTO_OBRIGATORIA_ACAO = false;
 
 // Abre seleção de corretor para uma chave específica
 function openSelCor(keyIdx) {
@@ -3340,8 +3361,42 @@ function openAcaoScr(userIdx) {
   document.getElementById('acao-scr').classList.add('open');
 }
 
+// Captura foto na tela de ação (retirada/devolução)
+// A foto fica SÓ em memória (_acaoFoto) — nunca vai ao banco
+async function handleAcaoPhoto(event) {
+  const file = event.target.files?.[0];
+  if(!file) return;
+  try {
+    const blob = await compressImage(file, 800, 0.75);
+    const b64 = await new Promise(res => {
+      const r = new FileReader();
+      r.onload = e => res(e.target.result);
+      r.readAsDataURL(blob);
+    });
+    _acaoFoto = b64;
+    const pp = document.getElementById('acao-pp');
+    const pua = document.getElementById('acao-pua');
+    const prb = document.getElementById('acao-prb');
+    if(pp)  { pp.src = b64; pp.style.display = 'block'; }
+    if(pua) pua.style.display = 'none';
+    if(prb) prb.style.display = '';
+  } catch(e) { console.warn('[AcaoPhoto]', e.message); toast('Erro ao processar foto', true); }
+}
+function removeAcaoPhoto() {
+  _acaoFoto = null;
+  const pp = document.getElementById('acao-pp');
+  const pua = document.getElementById('acao-pua');
+  const prb = document.getElementById('acao-prb');
+  if(pp)  { pp.src = ''; pp.style.display = 'none'; }
+  if(pua) pua.style.display = '';
+  if(prb) prb.style.display = 'none';
+  // Limpa o input para permitir selecionar o mesmo arquivo novamente
+  const inp = pua?.querySelector('input[type=file]');
+  if(inp) inp.value = '';
+}
 function closeAcaoScr() {
   document.getElementById('acao-scr').classList.remove('open');
+  removeAcaoPhoto(); // limpa foto da memória ao fechar
 }
 
 // Confirma retirada com o usuário selecionado
@@ -3376,9 +3431,13 @@ async function confirmarRetiradaInterna() {
   syncHist(entry);
   saveAll(); syncKey(k); renderList(); renderGer(); renderGHist();
 
-  // Email automático
+  // Email automático com foto da movimentação (se tirada)
   const subj = `Saída de chave — ${k.loc} — ${u.name} — ${now.toLocaleDateString('pt-BR')}`;
-  sendAutoEmail(subj, changes, k);
+  if(FOTO_OBRIGATORIA_ACAO && !_acaoFoto) {
+    toast('Foto obrigatória — tire uma foto da chave antes de confirmar', true);
+    return;
+  }
+  sendAutoEmail(subj, changes, k, null, null, _acaoFoto);
 
   // Fechar telas
   closeAcaoScr();
@@ -3420,7 +3479,11 @@ async function confirmarDevolucaoInterna() {
   saveAll(); syncKey(k); renderList(); renderGer(); renderGHist();
 
   const subj = `Devolução de chave — ${k.loc} — ${now.toLocaleDateString('pt-BR')}`;
-  sendAutoEmail(subj, changes, k);
+  if(FOTO_OBRIGATORIA_ACAO && !_acaoFoto) {
+    toast('Foto obrigatória — tire uma foto da chave antes de confirmar', true);
+    return;
+  }
+  sendAutoEmail(subj, changes, k, null, null, _acaoFoto);
 
   closeAcaoScr(); closeSelCor();
   document.querySelectorAll('.bkdp.open').forEach(b=>b.classList.remove('open'));
