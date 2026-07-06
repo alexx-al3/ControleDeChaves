@@ -1901,8 +1901,8 @@ async function openKey(idx) {
   // FLUXO NORMAL — ADM, Cadastro, Corretor autenticado
   let mainBtn = "";
   if(can("quickMove")) {
-    if(isDisp) mainBtn = `<button class="btn-retirar" style="width:100%;font-size:15px;padding:13px" onclick="closeSheet('mk');retirarChave(${idx})"><svg viewBox="0 0 24 24" width="17" height="17"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Retirar Chave</button>`;
-    if(isIndisp) mainBtn = `<button class="btn-devolver" style="width:100%;font-size:15px;padding:13px" onclick="closeSheet('mk');devolverChave(${idx})"><svg viewBox="0 0 24 24" width="17" height="17"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>Devolver Chave</button>`;
+    if(isDisp) mainBtn = `<button class="btn-retirar" style="width:100%;font-size:15px;padding:13px" onclick="openAcaoScrDirect(${idx})"><svg viewBox="0 0 24 24" width="17" height="17"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Retirar Chave</button>`;
+    if(isIndisp) mainBtn = `<button class="btn-devolver" style="width:100%;font-size:15px;padding:13px" onclick="openAcaoScrDirect(${idx})"><svg viewBox="0 0 24 24" width="17" height="17"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>Devolver Chave</button>`;
   }
   const secBtns = [`<button class="bs" style="flex:1;padding:10px;font-size:13px" onclick="closeSheet('mk')">Fechar</button>`];
   if(can("genPDF")) secBtns.push(`<button class="bn2" style="flex:1;padding:10px;font-size:13px" onclick="closeSheet('mk');openPDF(${idx})">${IP} Protocolo</button>`);
@@ -3263,7 +3263,21 @@ let _acaoKeyIdx = null; // índice da chave sendo retirada/devolvida
 let _acaoUserIdx = null; // índice do usuário selecionado
 let _acaoFoto = null; // foto da movimentação — só em memória, nunca vai ao banco
 // Mude para true para tornar a foto obrigatória na retirada/devolução
-const FOTO_OBRIGATORIA_ACAO = false;
+const FOTO_OBRIGATORIA_ACAO = true;
+
+// Abre a tela de ação diretamente com o usuário logado pré-selecionado
+// Usado pelo corretor que fez login com usuário/senha (sem etapa de seleção)
+function openAcaoScrDirect(keyIdx) {
+  _acaoKeyIdx = keyIdx;
+  const userIdx = users.findIndex(u => u.id === session?.id || u.user === session?.user);
+  if(userIdx < 0) {
+    // Fallback: se não achar o usuário, abre seleção normal
+    openSelCor(keyIdx);
+    return;
+  }
+  closeSheet('mk');
+  openAcaoScr(userIdx);
+}
 
 // Abre seleção de corretor para uma chave específica
 function openSelCor(keyIdx) {
