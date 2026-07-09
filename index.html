@@ -371,6 +371,8 @@ body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 @keyframes confPop{0%{transform:scale(0) rotate(-8deg);opacity:0}65%{transform:scale(1.1) rotate(2deg)}100%{transform:scale(1) rotate(0);opacity:1}}
 @keyframes fadeUp{from{transform:translateY(18px);opacity:0}to{transform:translateY(0);opacity:1}}
 @keyframes sparkle{0%,100%{transform:scale(0);opacity:0}50%{transform:scale(1);opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-7px)}30%{transform:translateX(7px)}45%{transform:translateX(-5px)}60%{transform:translateX(5px)}75%{transform:translateX(-3px)}90%{transform:translateX(3px)}}
+.shake{animation:shake .55s ease-in-out;}
 .conf-ov{position:fixed;inset:0;background:var(--bg);z-index:400;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1)}
 .conf-ov.open{transform:translateY(0)}
 .conf-icon-wrap{position:relative;margin-bottom:24px}
@@ -966,10 +968,11 @@ button[onclick*="ghPage"]:active,button[onclick*="keyHistPage"]:active{
         <button onclick="closeAcaoScr()" style="font-size:12px;color:var(--bl);background:var(--bl-bg);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-family:var(--f);font-weight:500">Trocar</button>
       </div>
     </div>
-    <!-- Foto da movimentação (opcional) — só vai no e-mail, nunca ao banco -->
+    <!-- Foto da movimentação — obrigatória, só vai no e-mail, nunca ao banco -->
     <div>
-      <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">
-        Foto da Chave <span id="acao-foto-badge" style="font-size:10px;font-weight:500;color:var(--tx3);text-transform:none;letter-spacing:0">( A foto é obrigatória )</span>
+      <div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+        Foto da Chave
+        <span style="font-size:10px;background:var(--cr-bg);color:var(--cr);border-radius:20px;padding:2px 7px;font-weight:600;text-transform:none;letter-spacing:0">Obrigatória</span>
       </div>
       <img id="acao-pp" class="phprev" src="" alt="" style="display:none;width:100%;max-height:180px;object-fit:cover;border-radius:10px;border:1px solid var(--bd);margin-bottom:8px">
       <div class="phup" id="acao-pua">
@@ -3374,6 +3377,30 @@ function openAcaoScr(userIdx) {
   document.getElementById('acao-scr').classList.add('open');
 }
 
+// Feedback visual quando tenta confirmar sem foto obrigatória
+function alertarFotoObrigatoria() {
+  const pua = document.getElementById('acao-pua');
+  const btns = document.querySelector('.acao-btns');
+  // Scroll até a área de foto
+  pua?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  // Destaca a área de upload com borda vermelha pulsante
+  if(pua) {
+    pua.style.transition = 'border-color .15s, box-shadow .15s';
+    pua.style.borderColor = 'var(--cr)';
+    pua.style.boxShadow = '0 0 0 3px var(--cr-bg)';
+    setTimeout(() => {
+      pua.style.borderColor = '';
+      pua.style.boxShadow = '';
+    }, 2000);
+  }
+  // Shake nos botões de ação
+  if(btns) {
+    btns.classList.add('shake');
+    setTimeout(() => btns.classList.remove('shake'), 600);
+  }
+  toast('Tire uma foto da chave para continuar', true);
+}
+
 // Captura foto na tela de ação (retirada/devolução)
 // A foto fica SÓ em memória (_acaoFoto) — nunca vai ao banco
 async function handleAcaoPhoto(event) {
@@ -3447,7 +3474,7 @@ async function confirmarRetiradaInterna() {
   // Email automático com foto da movimentação (se tirada)
   const subj = `Saída de chave — ${k.loc} — ${u.name} — ${now.toLocaleDateString('pt-BR')}`;
   if(FOTO_OBRIGATORIA_ACAO && !_acaoFoto) {
-    toast('Foto obrigatória — tire uma foto da chave antes de confirmar', true);
+    alertarFotoObrigatoria();
     return;
   }
   sendAutoEmail(subj, changes, k, null, null, _acaoFoto);
@@ -3493,7 +3520,7 @@ async function confirmarDevolucaoInterna() {
 
   const subj = `Devolução de chave — ${k.loc} — ${now.toLocaleDateString('pt-BR')}`;
   if(FOTO_OBRIGATORIA_ACAO && !_acaoFoto) {
-    toast('Foto obrigatória — tire uma foto da chave antes de confirmar', true);
+    alertarFotoObrigatoria();
     return;
   }
   sendAutoEmail(subj, changes, k, null, null, _acaoFoto);
