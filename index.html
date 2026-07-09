@@ -3442,6 +3442,13 @@ function closeAcaoScr() {
 // Confirma retirada com o usuário selecionado
 async function confirmarRetiradaInterna() {
   if(_acaoKeyIdx === null || _acaoUserIdx === null) return;
+
+  // ── Verifica foto ANTES de qualquer alteração ──
+  if(FOTO_OBRIGATORIA_ACAO && !_acaoFoto) {
+    alertarFotoObrigatoria();
+    return;
+  }
+
   const k = keys[_acaoKeyIdx];
   const u = users[_acaoUserIdx];
   const prev = {...k};
@@ -3471,12 +3478,8 @@ async function confirmarRetiradaInterna() {
   syncHist(entry);
   saveAll(); syncKey(k); renderList(); renderGer(); renderGHist();
 
-  // Email automático com foto da movimentação (se tirada)
+  // Email automático com foto da movimentação
   const subj = `Saída de chave — ${k.loc} — ${u.name} — ${now.toLocaleDateString('pt-BR')}`;
-  if(FOTO_OBRIGATORIA_ACAO && !_acaoFoto) {
-    alertarFotoObrigatoria();
-    return;
-  }
   sendAutoEmail(subj, changes, k, null, null, _acaoFoto);
 
   // Fechar telas
@@ -3494,6 +3497,13 @@ async function confirmarRetiradaInterna() {
 // Confirma devolução com o usuário selecionado
 async function confirmarDevolucaoInterna() {
   if(_acaoKeyIdx === null || _acaoUserIdx === null) return;
+
+  // ── Verifica foto ANTES de qualquer alteração ──
+  if(FOTO_OBRIGATORIA_ACAO && !_acaoFoto) {
+    alertarFotoObrigatoria();
+    return;
+  }
+
   const k = keys[_acaoKeyIdx];
   const u = users[_acaoUserIdx];
   const prev = {...k};
@@ -3519,10 +3529,6 @@ async function confirmarDevolucaoInterna() {
   saveAll(); syncKey(k); renderList(); renderGer(); renderGHist();
 
   const subj = `Devolução de chave — ${k.loc} — ${now.toLocaleDateString('pt-BR')}`;
-  if(FOTO_OBRIGATORIA_ACAO && !_acaoFoto) {
-    alertarFotoObrigatoria();
-    return;
-  }
   sendAutoEmail(subj, changes, k, null, null, _acaoFoto);
 
   closeAcaoScr(); closeSelCor();
