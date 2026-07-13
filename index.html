@@ -1211,13 +1211,30 @@ async function loadFromSupabase() {
     // Marca timestamp do sync bem-sucedido
     localStorage.setItem(SK_SYNC_TS, queryStartTs);
 
-    // Histórico em background — não bloqueia a tela
-    sbFetch("history","GET",null,"?select=*&order=ts.desc&limit=200")
+    // Histórico em background — delta sync: só busca entradas novas
+    // Merge com o cache local para nunca perder registros antigos
+    const lastHistTs = hist.length ? hist.reduce((max, h) => h.ts > max ? h.ts : max, hist[0].ts) : null;
+    const histQuery = lastHistTs
+      ? `?select=*&order=ts.desc&ts=gt.${lastHistTs}`        // só entradas novas
+      : `?select=*&order=ts.desc&limit=1000`;                 // primeiro acesso: busca 1000
+    sbFetch("history","GET",null,histQuery)
       .then(hRows => {
         if(hRows && hRows.length) {
-          hist = hRows.map(r=>({...r, changes:r.changes||[], ts:r.ts}));
-          localStorage.setItem(SK.h, JSON.stringify(hist));
-          renderGHist();
+          // Merge: adiciona só entradas que ainda não existem no cache local
+          let added = 0;
+          hRows.forEach(r => {
+            if(!hist.some(h => String(h.id) === String(r.id))) {
+              hist.push({...r, changes:r.changes||[], ts:r.ts});
+              added++;
+            }
+          });
+          if(added > 0) {
+            hist.sort((a,b) => new Date(b.ts) - new Date(a.ts));
+            if(hist.length > 5000) hist.length = 5000;
+            localStorage.setItem(SK.h, JSON.stringify(hist));
+            renderGHist();
+            console.log(`[Histórico] ${added} entrada(s) nova(s) adicionadas`);
+          }
         }
       }).catch(()=>{});
   } catch(e) {
@@ -1278,7 +1295,7 @@ function addHist(tipo, k, extra={}) {
     ...extra
   };
   hist.unshift(entry);
-  if(hist.length > 2000) hist.length = 2000;
+  if(hist.length > 5000) hist.length = 5000;
   syncHist(entry); // Supabase async
 }
 
@@ -3474,7 +3491,7 @@ async function confirmarRetiradaInterna() {
     changes,hora:now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})
   };
   hist.unshift(entry);
-  if(hist.length>2000) hist.length=2000;
+  if(hist.length>5000) hist.length=5000;
   syncHist(entry);
   saveAll(); syncKey(k); renderList(); renderGer(); renderGHist();
 
@@ -3524,7 +3541,7 @@ async function confirmarDevolucaoInterna() {
     changes,hora:now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})
   };
   hist.unshift(entry);
-  if(hist.length>2000) hist.length=2000;
+  if(hist.length>5000) hist.length=5000;
   syncHist(entry);
   saveAll(); syncKey(k); renderList(); renderGer(); renderGHist();
 
@@ -3723,7 +3740,7 @@ async function handleRealtimeChange(table, eventType, change) {
           usuario: record.usuario||"", perfil: record.perfil||"",
           changes: record.changes||[], extra: record.extra||{}
         });
-        if(hist.length > 2000) hist.length = 2000;
+        if(hist.length > 5000) hist.length = 5000;
         localStorage.setItem(SK.h, JSON.stringify(hist));
         renderGHist();
       }
