@@ -18,8 +18,6 @@ Sistema desenvolvido para otimizar a gestão operacional de chaves imobiliárias
 
 # 🌎 Sistema Online
 
-🔗 https://controledechavesacrc.vercel.app
-
 ---
 
 # 🚀 Sobre o Projeto
