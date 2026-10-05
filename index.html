@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Controle de Chaves | ACRC Imóveis</title>
 
     <style>
@@ -16,219 +15,217 @@
         body {
             font-family: Arial, Helvetica, sans-serif;
             background: #ffffff;
-            color: #132f55;
+            color: #142f53;
             min-height: 100vh;
         }
 
-        /* TOPO */
-        .header {
-            height: 63px;
-            background: #1c365b;
+        /* CABEÇALHO */
+        header {
+            height: 64px;
+            background: #1b365d;
             display: flex;
             align-items: center;
-            padding: 0 26px;
-            color: white;
+            padding: 0 28px;
             box-shadow: 0 2px 5px rgba(0,0,0,.08);
         }
 
-        .header-logo {
+        .brand-symbol {
             width: 20px;
-            margin-right: 22px;
+            height: 20px;
+            border: 3px solid white;
+            border-top: 0;
+            transform: rotate(45deg);
+            margin-right: 23px;
+            opacity: .9;
         }
 
-        .header-info strong {
+        .header-text strong {
             display: block;
+            color: white;
             font-size: 13px;
-            color: #ffffff;
             margin-bottom: 5px;
         }
 
-        .header-info span {
-            font-size: 11px;
+        .header-text span {
+            display: block;
             color: #91a8c7;
+            font-size: 11px;
         }
 
         /* CONTEÚDO */
-        .main {
-            min-height: calc(100vh - 63px);
+        main {
+            min-height: calc(100vh - 64px);
             display: flex;
-            justify-content: center;
             align-items: center;
-            padding: 45px 20px;
+            justify-content: center;
+            padding: 40px 20px;
         }
 
-        .container {
+        .content {
             width: 100%;
-            max-width: 360px;
+            max-width: 390px;
             text-align: center;
         }
 
-        /* ÍCONE */
-        .icon-box {
+        /* ÍCONE SIMPLES */
+        .icon {
             width: 72px;
             height: 72px;
+            margin: 0 auto 24px;
             background: #17345b;
-            border-radius: 18px;
-            margin: 0 auto 22px;
+            border-radius: 19px;
 
             display: flex;
             align-items: center;
             justify-content: center;
-        }
 
-        .icon-box img {
-            width: 48px;
-            max-height: 48px;
-            object-fit: contain;
+            font-size: 32px;
+            font-weight: bold;
+            color: white;
         }
 
         h1 {
-            font-size: 22px;
-            color: #111111;
-            margin-bottom: 10px;
+            color: #111;
+            font-size: 23px;
+            margin-bottom: 9px;
         }
 
         .subtitle {
-            color: #899bb5;
+            color: #8a9ab2;
             font-size: 14px;
-            margin-bottom: 30px;
+            margin-bottom: 32px;
         }
 
-        /* AVISO */
+        /* STATUS */
         .status {
             display: inline-flex;
             align-items: center;
             gap: 7px;
 
-            background: #fff4e8;
-            color: #e87500;
-
-            font-size: 12px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .5px;
-
-            padding: 8px 13px;
-            border-radius: 30px;
+            padding: 8px 14px;
             margin-bottom: 18px;
+
+            background: #fff3e6;
+            color: #e66f00;
+
+            border-radius: 30px;
+
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: .6px;
         }
 
-        .status-dot {
+        .dot {
             width: 7px;
             height: 7px;
             background: #ff7900;
             border-radius: 50%;
         }
 
-        .message h2 {
+        h2 {
             color: #17345b;
-            font-size: 19px;
-            margin-bottom: 12px;
+            font-size: 20px;
+            margin-bottom: 13px;
         }
 
-        .message p {
-            color: #5f7088;
+        .description {
+            color: #66768c;
             font-size: 14px;
-            line-height: 1.6;
-            margin-bottom: 24px;
+            line-height: 1.65;
+            margin-bottom: 25px;
         }
 
-        .message strong {
+        .description strong {
             color: #17345b;
         }
 
         /* BOTÃO */
-        .crm-button {
+        .button {
             width: 100%;
-            height: 48px;
-
-            background: #17345b;
-            color: #ffffff;
-
-            border-radius: 10px;
+            height: 49px;
 
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
 
-            text-decoration: none;
+            background: #17345b;
+            color: white;
 
+            border-radius: 10px;
+
+            text-decoration: none;
             font-size: 15px;
             font-weight: bold;
 
-            transition: .2s ease;
+            transition: .2s;
         }
 
-        .crm-button:hover {
-            background: #214573;
+        .button:hover {
+            background: #224873;
             transform: translateY(-1px);
-            box-shadow: 0 6px 15px rgba(23,52,91,.18);
+            box-shadow: 0 6px 18px rgba(23,52,91,.18);
         }
 
         .arrow {
-            font-size: 18px;
+            font-size: 20px;
         }
 
-        /* INFORMAÇÃO */
-        .info {
-            margin-top: 16px;
-            color: #8291a7;
+        .login-info {
+            color: #8a99ad;
             font-size: 12px;
-            line-height: 1.5;
+            margin-top: 13px;
         }
 
-        /* SUPORTE */
+        /* DIVISOR */
         .divider {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin: 28px 0 20px;
-            color: #a0aec0;
-            font-size: 12px;
+            gap: 13px;
+
+            margin: 30px 0 20px;
+
+            color: #a1adbd;
+            font-size: 11px;
         }
 
         .divider::before,
         .divider::after {
             content: "";
-            flex: 1;
             height: 1px;
-            background: #dce3ec;
+            background: #dde3eb;
+            flex: 1;
         }
 
+        /* SUPORTE */
         .support {
-            border: 1px solid #dce3ec;
+            padding: 17px;
+            border: 1px solid #dde3eb;
             border-radius: 11px;
-            padding: 16px;
-            background: #ffffff;
         }
 
-        .support-title {
+        .support strong {
+            display: block;
             color: #17345b;
-            font-weight: 600;
             font-size: 14px;
-            margin-bottom: 5px;
+            margin-bottom: 6px;
         }
 
-        .support-text {
-            color: #7c8ca3;
+        .support p {
+            color: #7c8da4;
             font-size: 12px;
-            line-height: 1.5;
+            line-height: 1.55;
         }
 
-        .support-text strong {
+        .support b {
             color: #17345b;
         }
 
-        /* MOBILE */
-        @media (max-width: 480px) {
-            .main {
+        @media (max-width: 500px) {
+            main {
                 align-items: flex-start;
-                padding-top: 90px;
-            }
-
-            .container {
-                max-width: 360px;
+                padding-top: 85px;
             }
         }
     </style>
@@ -236,87 +233,62 @@
 
 <body>
 
-<header class="header">
-
-    <!-- Substitua pelo caminho da logo -->
-    <img
-        src="logo.png"
-        alt="ACRC Imóveis"
-        class="header-logo"
-    >
-
-    <div class="header-info">
+<header>
+    <div class="header-text">
         <strong>Controle de Chaves</strong>
         <span>ACRC Imóveis — Blumenau / SC</span>
     </div>
-
 </header>
 
+<main>
+    <div class="content">
 
-<main class="main">
-
-    <div class="container">
-
-        <div class="icon-box">
-            <img src="logo.png" alt="ACRC Imóveis">
-        </div>
+        <div class="icon">A</div>
 
         <h1>Controle de Chaves</h1>
-
-        <div class="subtitle">
-            ACRC Imóveis — Blumenau / SC
-        </div>
+        <div class="subtitle">ACRC Imóveis — Blumenau / SC</div>
 
         <div class="status">
-            <span class="status-dot"></span>
+            <span class="dot"></span>
             Sistema desativado
         </div>
 
-        <div class="message">
+        <h2>O Controle de Chaves mudou</h2>
 
-            <h2>O Controle de Chaves mudou</h2>
-
-            <p>
-                Este sistema foi desativado.
-                O controle de chaves agora está centralizado diretamente
-                no <strong>novo CRM da ACRC Imóveis</strong>.
-            </p>
-
-        </div>
+        <p class="description">
+            Este sistema foi desativado.<br>
+            O <strong>Controle de Chaves</strong> agora está centralizado
+            diretamente no <strong>novo CRM da ACRC Imóveis</strong>.
+        </p>
 
         <a
+            class="button"
             href="https://acrcimoveis.com.br/"
-            class="crm-button"
+            target="_blank"
+            rel="noopener noreferrer"
         >
             Acessar o novo CRM
             <span class="arrow">→</span>
         </a>
 
-        <div class="info">
+        <div class="login-info">
             Utilize suas credenciais do novo sistema para acessar.
         </div>
 
-
         <div class="divider">
-            suporte
+            DÚVIDAS?
         </div>
 
-
         <div class="support">
+            <strong>Precisa de ajuda?</strong>
 
-            <div class="support-title">
-                Precisa de ajuda?
-            </div>
-
-            <div class="support-text">
+            <p>
                 Em caso de dúvidas sobre o novo sistema,
-                entre em contato com o <strong>Setor de Marketing</strong>.
-            </div>
-
+                entre em contato com o <b>Setor de Marketing</b>.
+            </p>
         </div>
 
     </div>
-
 </main>
 
 </body>
